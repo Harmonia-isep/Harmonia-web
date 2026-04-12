@@ -1,0 +1,18 @@
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 32px;
+  background: #1a1a2e;
+  border-bottom: 1px solid #333;
+}
+.logo { font-size: 1.5rem; color: #a78bfa; }
+nav { display: flex; gap: 12px; align-items: center; }
+nav button {
+  background: transparent; border: 1px solid #444; color: #fffffe;
+  padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.9rem;
+  transition: all 0.2s;
+}
+nav button:hover, nav button.active { background: #a78bfa; border-color: #a78bfa; color: #0f0e17; }
+nav button.logout { border-color: #ef4444; color: #ef4444; }
+nav button.logout:hover { background: #ef4444; color: white; }
+.main { flex: 1; padding: 32px; max-width: 1100px; margin: 0 auto; width: 100%; }

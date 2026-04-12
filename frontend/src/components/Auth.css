@@ -1,0 +1,29 @@
+.auth-bg {
+  min-height: 100vh; display: flex; align-items: center;
+  justify-content: center; background: #0f0e17;
+}
+.auth-box {
+  background: #1a1a2e; padding: 48px; border-radius: 16px;
+  width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 16px;
+  border: 1px solid #333;
+}
+.auth-box h1 { font-size: 2rem; color: #a78bfa; text-align: center; }
+.subtitle { text-align: center; color: #888; margin-top: -8px; }
+.tabs { display: flex; gap: 8px; }
+.tabs button {
+  flex: 1; padding: 10px; border: 1px solid #444; background: transparent;
+  color: #fffffe; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+}
+.tabs button.active { background: #a78bfa; border-color: #a78bfa; color: #0f0e17; }
+.auth-box input {
+  padding: 12px 16px; border-radius: 8px; border: 1px solid #333;
+  background: #0f0e17; color: #fffffe; font-size: 1rem;
+}
+.auth-box input:focus { outline: none; border-color: #a78bfa; }
+.error { color: #f87171; font-size: 0.85rem; }
+.submit {
+  padding: 14px; background: #a78bfa; color: #0f0e17; border: none;
+  border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer;
+}
+.submit:hover { background: #8b5cf6; }
+.submit:disabled { opacity: 0.6; cursor: not-allowed; }
