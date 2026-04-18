@@ -34,12 +34,12 @@ export default function Library({ user }) {
   return (
     <div className="library">
       <div className="track-list">
-        <h2>Your Library ({tracks.length} tracks)</h2>
+        <h2>Your Library <span>({tracks.length})</span></h2>
         {tracks.length === 0 && <p className="empty">No tracks yet. Upload your first track!</p>}
         {tracks.map(t => (
           <div key={t.id} className={`track-item ${selected?.id === t.id ? 'active' : ''}`} onClick={() => selectTrack(t)}>
-            <div className="track-icon">🎵</div>
-            <div>
+            <div className="track-icon">&#9834;</div>
+            <div className="track-info">
               <p className="track-title">{t.title}</p>
               <p className="track-meta">{t.artist || 'Unknown artist'} {t.album ? `· ${t.album}` : ''}</p>
             </div>
