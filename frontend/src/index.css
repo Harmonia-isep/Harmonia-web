@@ -10,9 +10,9 @@
   --text-secondary: #86868b;
   --text-tertiary: #48484a;
 
-  --accent: #8b7cf6;
-  --accent-hover: #7b6ce6;
-  --accent-glow: rgba(139, 124, 246, 0.12);
+  --accent: #ff3b30;
+  --accent-hover: #e6352b;
+  --accent-glow: rgba(255, 59, 48, 0.12);
 
   --success: #32d74b;
   --error: #ff453a;

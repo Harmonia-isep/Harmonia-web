@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { registerUser, loginUser } from '../api';
 import './Auth.css';
 
-export default function Auth({ onLogin, onClose }) {
-  const [mode, setMode] = useState('login');
+export default function Auth({ onLogin, onClose, defaultMode = 'login' }) {
+  const [mode, setMode] = useState(defaultMode);
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
