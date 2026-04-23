@@ -10,3 +10,4 @@ export const getUserTracks = (userId) => API.get(`/tracks/user/${userId}`);
 export const getTrack = (trackId) => API.get(`/tracks/${trackId}`);
 export const analyzeTrack = (trackId) => API.post(`/analysis/analyze/${trackId}`);
 export const getAnalysis = (trackId) => API.get(`/analysis/${trackId}`);
+export const getAudioUrl = (trackId) => `http://localhost:8000/api/tracks/${trackId}/audio`;

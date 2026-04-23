@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getUserTracks, getAnalysis } from '../api';
+import Waveform from './Waveform';
 import './Library.css';
 
 export default function Library({ user }) {
@@ -54,6 +55,7 @@ export default function Library({ user }) {
             <p className="track-meta">{selected.artist || 'Unknown artist'}</p>
             {analyzing && <p className="loading">Loading analysis...</p>}
             {!analyzing && !analysis && <p className="empty">No analysis yet. Re-upload to trigger analysis.</p>}
+            <Waveform trackId={selected.id} />
             {analysis && (
               <div className="analysis-grid">
                 <div className="analysis-card">

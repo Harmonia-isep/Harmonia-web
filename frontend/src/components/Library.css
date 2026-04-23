@@ -43,7 +43,7 @@
 
 .track-item.active {
   background: var(--accent-glow);
-  border-color: rgba(139, 124, 246, 0.2);
+  border-color: rgba(255, 59, 48, 0.2);
 }
 
 .track-icon {
