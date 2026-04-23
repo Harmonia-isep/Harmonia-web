@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from backend.models.database import get_db
 from backend.models.models import Track, User
@@ -51,6 +52,15 @@ def get_track(track_id: int, db: Session = Depends(get_db)):
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
     return {"id": track.id, "title": track.title, "artist": track.artist, "analysis": track.analysis}
+
+@router.get("/{track_id}/audio")
+def get_track_audio(track_id: int, db: Session = Depends(get_db)):
+    track = db.query(Track).filter(Track.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+    if not os.path.exists(track.file_path):
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    return FileResponse(track.file_path, media_type="audio/mpeg")
 
 @router.delete("/{track_id}")
 def delete_track(track_id: int, db: Session = Depends(get_db)):

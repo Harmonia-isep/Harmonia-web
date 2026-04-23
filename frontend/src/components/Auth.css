@@ -1,29 +1,160 @@
-.auth-bg {
-  min-height: 100vh; display: flex; align-items: center;
-  justify-content: center; background: #0f0e17;
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+  animation: overlayIn 0.2s ease;
+}
+
 .auth-box {
-  background: #1a1a2e; padding: 48px; border-radius: 16px;
-  width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 16px;
-  border: 1px solid #333;
+  position: relative;
+  background: var(--bg-secondary);
+  padding: 48px 40px;
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border: 1px solid var(--border);
+  animation: modalIn 0.3s ease;
 }
-.auth-box h1 { font-size: 2rem; color: #a78bfa; text-align: center; }
-.subtitle { text-align: center; color: #888; margin-top: -8px; }
-.tabs { display: flex; gap: 8px; }
+
+.auth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all var(--transition);
+  line-height: 1;
+}
+
+.auth-close:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.auth-box h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  margin-top: -12px;
+}
+
+.tabs {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 2px;
+}
+
 .tabs button {
-  flex: 1; padding: 10px; border: 1px solid #444; background: transparent;
-  color: #fffffe; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  flex: 1;
+  padding: 9px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all var(--transition);
 }
-.tabs button.active { background: #a78bfa; border-color: #a78bfa; color: #0f0e17; }
+
+.tabs button.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.tabs button:not(.active):hover {
+  color: var(--text-primary);
+}
+
 .auth-box input {
-  padding: 12px 16px; border-radius: 8px; border: 1px solid #333;
-  background: #0f0e17; color: #fffffe; font-size: 1rem;
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  transition: all var(--transition);
 }
-.auth-box input:focus { outline: none; border-color: #a78bfa; }
-.error { color: #f87171; font-size: 0.85rem; }
+
+.auth-box input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.auth-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.error {
+  color: var(--error);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
 .submit {
-  padding: 14px; background: #a78bfa; color: #0f0e17; border: none;
-  border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer;
+  padding: 13px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+  margin-top: 4px;
 }
-.submit:hover { background: #8b5cf6; }
-.submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.submit:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.submit:active {
+  transform: translateY(0);
+}
+
+.submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}

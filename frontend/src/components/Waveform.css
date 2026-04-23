@@ -1,0 +1,109 @@
+.waveform-container {
+  margin-top: 20px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  transition: border-color var(--transition);
+}
+
+.waveform-container:hover {
+  border-color: var(--border-hover);
+}
+
+.waveform-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.waveform-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.waveform-play:hover {
+  filter: brightness(1.15);
+  transform: scale(1.05);
+}
+
+.waveform-play:active {
+  transform: scale(0.95);
+}
+
+.waveform-time {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.waveform-time-sep {
+  color: var(--text-tertiary);
+  margin: 0 4px;
+}
+
+.waveform-canvas {
+  width: 100%;
+  height: 64px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* Loading state */
+.waveform-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.waveform-loading p {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.waveform-loading-bars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 40px;
+}
+
+.waveform-loading-bars span {
+  width: 3px;
+  height: 12px;
+  background: var(--accent);
+  opacity: 0.3;
+  border-radius: 2px;
+  animation: waveLoad 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes waveLoad {
+  0% { height: 8px; opacity: 0.2; }
+  100% { height: 32px; opacity: 0.5; }
+}
+
+/* Error state */
+.waveform-error {
+  text-align: center;
+  padding: 12px 0;
+}
+
+.waveform-error p {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}

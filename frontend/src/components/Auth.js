@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { registerUser, loginUser } from '../api';
 import './Auth.css';
 
-export default function Auth({ onLogin }) {
-  const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
+export default function Auth({ onLogin, onClose, defaultMode = 'login' }) {
+  const [mode, setMode] = useState(defaultMode);
+  const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +18,7 @@ export default function Auth({ onLogin }) {
         setMode('login');
         setError('Registered! Please log in.');
       } else {
-        const res = await loginUser({ email: form.email, password: form.password });
+        const res = await loginUser({ username: form.username, password: form.password });
         onLogin(res.data);
       }
     } catch (err) {
@@ -28,18 +28,16 @@ export default function Auth({ onLogin }) {
   };
 
   return (
-    <div className="auth-bg">
-      <div className="auth-box">
-        <h1>🎵 Harmonia</h1>
-        <p className="subtitle">Music Analysis & Library</p>
+    <div className="auth-overlay" onClick={onClose}>
+      <div className="auth-box" onClick={(e) => e.stopPropagation()}>
+        <button className="auth-close" onClick={onClose}>&times;</button>
+        <h1>Harmonia</h1>
+        <p className="subtitle">Sign in to sync your library</p>
         <div className="tabs">
           <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Login</button>
           <button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>Register</button>
         </div>
-        {mode === 'register' && (
-          <input name="username" placeholder="Username" value={form.username} onChange={handle} />
-        )}
-        <input name="email" placeholder="Email" value={form.email} onChange={handle} />
+        <input name="username" placeholder="Username" value={form.username} onChange={handle} />
         <input name="password" type="password" placeholder="Password" value={form.password} onChange={handle} />
         {error && <p className="error">{error}</p>}
         <button className="submit" onClick={submit} disabled={loading}>
