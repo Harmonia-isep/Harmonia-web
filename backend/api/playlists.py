@@ -82,3 +82,42 @@ def remove_track_from_playlist(playlist_id: int, track_id: int, db: Session = De
     db.commit()
 
     return {"message": "Track removed from playlist"}
+
+# get all tracks in a playlist, ordered by position
+@router.get("/{playlist_id}/tracks")
+def get_playlist_tracks(playlist_id: int, db: Session = Depends(get_db)):
+    playlist = db.query(Playlist).filter(Playlist.id == playlist_id).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    entries = db.query(PlaylistTrack).filter(
+        PlaylistTrack.playlist_id == playlist_id
+    ).order_by(PlaylistTrack.position).all()
+
+    result = []
+    for entry in entries:
+        track = db.query(Track).filter(Track.id == entry.track_id).first()
+        if track:
+            result.append({
+                "track_id": track.id,
+                "title": track.title,
+                "artist": track.artist,
+                "position": entry.position
+            })
+
+    return result
+
+# reorder tracks — pass a list of track ids in the new order
+@router.put("/{playlist_id}/reorder")
+def reorder_playlist(playlist_id: int, track_ids: list[int], db: Session = Depends(get_db)):
+    for i, track_id in enumerate(track_ids):
+        entry = db.query(PlaylistTrack).filter(
+            PlaylistTrack.playlist_id == playlist_id,
+            PlaylistTrack.track_id == track_id
+        ).first()
+
+        if entry:
+            entry.position = i
+
+    db.commit()
+    return {"message": "Playlist reordered"}
