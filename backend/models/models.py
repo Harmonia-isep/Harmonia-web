@@ -37,3 +37,28 @@ class Analysis(Base):
     danceability = Column(Float)
     analyzed_at = Column(DateTime, default=datetime.utcnow)
     track = relationship("Track", back_populates="analysis")
+
+# playlist that belongs to a user
+class Playlist(Base):
+    __tablename__ = "playlists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    share_token = Column(String, unique=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    owner = relationship("User")
+    tracks = relationship("PlaylistTrack", back_populates="playlist")
+
+# links playlists to tracks, with ordering
+class PlaylistTrack(Base):
+    __tablename__ = "playlist_tracks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    playlist_id = Column(Integer, ForeignKey("playlists.id"))
+    track_id = Column(Integer, ForeignKey("tracks.id"))
+    position = Column(Integer, default=0)
+
+    playlist = relationship("Playlist", back_populates="tracks")
+    track = relationship("Track")
