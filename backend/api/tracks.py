@@ -42,8 +42,32 @@ async def upload_track(
     return {"id": track.id, "title": track.title, "file_path": track.file_path}
 
 @router.get("/user/{user_id}")
-def get_user_tracks(user_id: int, db: Session = Depends(get_db)):
-    tracks = db.query(Track).filter(Track.user_id == user_id).all()
+def get_user_tracks(
+    user_id: int,
+    search: str = None,
+    key: str = None,
+    bpm_min: float = None,
+    bpm_max: float = None,
+    db: Session = Depends(get_db)
+):
+    from backend.models.models import Analysis
+    query = db.query(Track).filter(Track.user_id == user_id)
+
+    if search:
+        query = query.filter(
+            (Track.title.ilike(f"%{search}%")) | (Track.artist.ilike(f"%{search}%"))
+        )
+
+    if key or bpm_min or bpm_max:
+        query = query.join(Analysis, Analysis.track_id == Track.id)
+        if key:
+            query = query.filter(Analysis.key == key)
+        if bpm_min:
+            query = query.filter(Analysis.bpm >= bpm_min)
+        if bpm_max:
+            query = query.filter(Analysis.bpm <= bpm_max)
+
+    tracks = query.all()
     return [{"id": t.id, "title": t.title, "artist": t.artist, "album": t.album, "uploaded_at": t.uploaded_at} for t in tracks]
 
 @router.get("/{track_id}")
