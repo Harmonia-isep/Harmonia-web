@@ -9,7 +9,7 @@ def analyze_audio(file_path: str) -> dict:
 
         # BPM
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        bpm = float(round(tempo, 2))
+        bpm = float(round(float(tempo[0]), 2))
 
         # Key detection using chroma
         chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
@@ -40,10 +40,5 @@ def analyze_audio(file_path: str) -> dict:
             "danceability": danceability
         }
     except Exception as e:
-        return {
-            "bpm": 0.0,
-            "key": "Unknown",
-            "scale": "Unknown",
-            "energy": 0.0,
-            "danceability": 0.0
-        }
+        print(f"Analysis error: {e}")
+        raise e
