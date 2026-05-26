@@ -36,3 +36,49 @@ def get_user_playlists(user_id: int, db: Session = Depends(get_db)):
         })
 
     return result
+
+# add a track to a playlist
+@router.post("/{playlist_id}/add/{track_id}")
+def add_track_to_playlist(playlist_id: int, track_id: int, db: Session = Depends(get_db)):
+    playlist = db.query(Playlist).filter(Playlist.id == playlist_id).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    track = db.query(Track).filter(Track.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    # check if track is already in the playlist
+    exists = db.query(PlaylistTrack).filter(
+        PlaylistTrack.playlist_id == playlist_id,
+        PlaylistTrack.track_id == track_id
+    ).first()
+    if exists:
+        raise HTTPException(status_code=400, detail="Track already in playlist")
+
+    # figure out the next position
+    last = db.query(PlaylistTrack).filter(
+        PlaylistTrack.playlist_id == playlist_id
+    ).count()
+
+    entry = PlaylistTrack(playlist_id=playlist_id, track_id=track_id, position=last)
+    db.add(entry)
+    db.commit()
+
+    return {"message": f"Track added to playlist at position {last}"}
+
+# remove a track from a playlist
+@router.delete("/{playlist_id}/remove/{track_id}")
+def remove_track_from_playlist(playlist_id: int, track_id: int, db: Session = Depends(get_db)):
+    entry = db.query(PlaylistTrack).filter(
+        PlaylistTrack.playlist_id == playlist_id,
+        PlaylistTrack.track_id == track_id
+    ).first()
+
+    if not entry:
+        raise HTTPException(status_code=404, detail="Track not in playlist")
+
+    db.delete(entry)
+    db.commit()
+
+    return {"message": "Track removed from playlist"}
