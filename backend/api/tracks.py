@@ -96,3 +96,48 @@ def delete_track(track_id: int, db: Session = Depends(get_db)):
     db.delete(track)
     db.commit()
     return {"message": "Track deleted"}
+
+# Export all tracks + analysis as a CSV file the user can download
+@router.get("/user/{user_id}/export")
+def export_tracks_csv(user_id: int, db: Session = Depends(get_db)):
+    from backend.models.models import Analysis
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+
+    # grab all the user's tracks
+    tracks = db.query(Track).filter(Track.user_id == user_id).all()
+
+    # write everything into a CSV in memory
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+
+    # header row
+    writer.writerow(["Title", "Artist", "Album", "BPM", "Key", "Scale", "Energy", "Danceability"])
+
+    # one row per track, pull analysis if it exists
+    for track in tracks:
+        a = db.query(Analysis).filter(Analysis.track_id == track.id).first()
+
+        row = [
+            track.title,
+            track.artist or "",
+            track.album or "",
+        ]
+
+        # if the track has been analyzed, add those columns too
+        if a:
+            row += [a.bpm, a.key, a.scale, a.energy, a.danceability]
+        else:
+            row += ["", "", "", "", ""]
+
+        writer.writerow(row)
+
+    buffer.seek(0)
+
+    # send it back as a downloadable file
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=harmonia_export.csv"}
+    )
