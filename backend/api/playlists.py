@@ -136,7 +136,7 @@ def delete_playlist(playlist_id: int, db: Session = Depends(get_db)):
 
     return {"message": "Playlist deleted"}
 
-# view a shared playlist by its token (no login needed)
+# US16 - view a shared playlist by its token (no login needed)
 @router.get("/shared/{share_token}")
 def get_shared_playlist(share_token: str, db: Session = Depends(get_db)):
     playlist = db.query(Playlist).filter(Playlist.share_token == share_token).first()
