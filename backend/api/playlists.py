@@ -121,3 +121,43 @@ def reorder_playlist(playlist_id: int, track_ids: list[int], db: Session = Depen
 
     db.commit()
     return {"message": "Playlist reordered"}
+
+# delete a playlist (tracks stay in the library)
+@router.delete("/{playlist_id}")
+def delete_playlist(playlist_id: int, db: Session = Depends(get_db)):
+    playlist = db.query(Playlist).filter(Playlist.id == playlist_id).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    # remove all the track links first
+    db.query(PlaylistTrack).filter(PlaylistTrack.playlist_id == playlist_id).delete()
+    db.delete(playlist)
+    db.commit()
+
+    return {"message": "Playlist deleted"}
+
+# view a shared playlist by its token (no login needed)
+@router.get("/shared/{share_token}")
+def get_shared_playlist(share_token: str, db: Session = Depends(get_db)):
+    playlist = db.query(Playlist).filter(Playlist.share_token == share_token).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    entries = db.query(PlaylistTrack).filter(
+        PlaylistTrack.playlist_id == playlist.id
+    ).order_by(PlaylistTrack.position).all()
+
+    tracks = []
+    for entry in entries:
+        track = db.query(Track).filter(Track.id == entry.track_id).first()
+        if track:
+            tracks.append({
+                "title": track.title,
+                "artist": track.artist,
+                "position": entry.position
+            })
+
+    return {
+        "name": playlist.name,
+        "tracks": tracks
+    }
