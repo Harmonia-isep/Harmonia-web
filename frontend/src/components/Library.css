@@ -164,60 +164,81 @@
 
 /* search and filter */
 .search-bar {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .search-bar input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #1a1a2e;
-  color: #fff;
-  font-size: 14px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
   outline: none;
+  transition: border-color var(--transition);
+}
+
+.search-bar input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .search-bar input:focus {
-  border-color: #e94560;
+  border-color: var(--border-hover);
 }
 
 .filter-bar {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   align-items: center;
 }
 
 .filter-bar select,
 .filter-bar input {
-  padding: 8px 10px;
-  border: 1px solid #333;
-  border-radius: 6px;
-  background: #1a1a2e;
-  color: #fff;
-  font-size: 13px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
   outline: none;
+  transition: border-color var(--transition);
+}
+
+.filter-bar select:focus,
+.filter-bar input:focus {
+  border-color: var(--border-hover);
+}
+
+.filter-bar input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .filter-bar select {
-  min-width: 90px;
+  min-width: 96px;
+  cursor: pointer;
 }
 
 .filter-bar input {
-  width: 80px;
+  width: 84px;
 }
 
 .export-btn {
-  padding: 8px 14px;
-  background: #e94560;
-  color: #fff;
-  border-radius: 6px;
+  margin-left: auto;
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  font-size: 13px;
+  font-size: 0.8125rem;
+  font-weight: 500;
   white-space: nowrap;
+  transition: all var(--transition);
 }
 
 .export-btn:hover {
-  background: #c73650;
+  border-color: var(--accent);
+  color: var(--accent);
 }
