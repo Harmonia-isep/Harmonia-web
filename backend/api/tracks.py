@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from backend.models.database import get_db
 from backend.models.models import Track, User
 import shutil, os, uuid
+from backend.audio.artwork import extract_artwork
 
 router = APIRouter()
 
@@ -29,11 +30,15 @@ async def upload_track(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    # try to pull album art out of the file's metadata
+    artwork_path = extract_artwork(file_path)
+
     track = Track(
         title=title,
         artist=artist,
         album=album,
         file_path=file_path,
+        artwork_path=artwork_path,
         user_id=user_id
     )
     db.add(track)
