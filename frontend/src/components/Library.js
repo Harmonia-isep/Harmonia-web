@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserTracks, getAnalysis } from '../api';
+import { getUserTracks, getAnalysis, searchTracks, exportCSV } from '../api';
 import Waveform from './Waveform';
 import './Library.css';
 
@@ -10,12 +10,36 @@ export default function Library({ user }) {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
 
-  useEffect(() => {
-    getUserTracks(user.user_id).then(res => {
+  // search and filter state
+  const [searchText, setSearchText] = useState('');
+  const [filterKey, setFilterKey] = useState('');
+  const [bpmMin, setBpmMin] = useState('');
+  const [bpmMax, setBpmMax] = useState('');
+
+  // fetch tracks, re-runs when filters change
+  const fetchTracks = () => {
+    setLoading(true);
+    const params = {};
+    if (searchText) params.search = searchText;
+    if (filterKey) params.key = filterKey;
+    if (bpmMin) params.bpm_min = bpmMin;
+    if (bpmMax) params.bpm_max = bpmMax;
+
+    searchTracks(user.user_id, params).then(res => {
       setTracks(res.data);
       setLoading(false);
     }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchTracks();
   }, [user]);
+
+  // search when user stops typing for 400ms
+  useEffect(() => {
+    const timer = setTimeout(() => fetchTracks(), 400);
+    return () => clearTimeout(timer);
+  }, [searchText, filterKey, bpmMin, bpmMax]);
 
   const selectTrack = async (track) => {
     setSelected(track);
@@ -36,6 +60,27 @@ export default function Library({ user }) {
     <div className="library">
       <div className="track-list">
         <h2>Your Library <span>({tracks.length})</span></h2>
+
+        {/* search and filter bar */}
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Search by title or artist..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
+        <div className="filter-bar">
+          <select value={filterKey} onChange={(e) => setFilterKey(e.target.value)}>
+            <option value="">All keys</option>
+            {['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].map(k => (
+              <option key={k} value={k}>{k}</option>
+            ))}
+          </select>
+          <input type="number" placeholder="BPM min" value={bpmMin} onChange={(e) => setBpmMin(e.target.value)} />
+          <input type="number" placeholder="BPM max" value={bpmMax} onChange={(e) => setBpmMax(e.target.value)} />
+          <a href={exportCSV(user.user_id)} className="export-btn" download>Export CSV</a>
+        </div>
         {tracks.length === 0 && <p className="empty">No tracks yet. Upload your first track!</p>}
         {tracks.map(t => (
           <div key={t.id} className={`track-item ${selected?.id === t.id ? 'active' : ''}`} onClick={() => selectTrack(t)}>
