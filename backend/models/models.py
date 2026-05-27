@@ -20,6 +20,7 @@ class Track(Base):
     artist = Column(String)
     album = Column(String)
     file_path = Column(String, nullable=False)
+    artwork_path = Column(String)  # path to extracted album art, if the file had any
     duration = Column(Float)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
