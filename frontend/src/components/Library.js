@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserTracks, getAnalysis, searchTracks, exportCSV } from '../api';
+import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl } from '../api';
 import Waveform from './Waveform';
 import './Library.css';
 
@@ -84,7 +84,14 @@ export default function Library({ user }) {
         {tracks.length === 0 && <p className="empty">No tracks yet. Upload your first track!</p>}
         {tracks.map(t => (
           <div key={t.id} className={`track-item ${selected?.id === t.id ? 'active' : ''}`} onClick={() => selectTrack(t)}>
-            <div className="track-icon">&#9834;</div>
+            <div className="track-icon">
+              <img
+                src={getArtworkUrl(t.id)}
+                alt=""
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+              />
+              <span className="track-icon-fallback">&#9834;</span>
+            </div>
             <div className="track-info">
               <p className="track-title">{t.title}</p>
               <p className="track-meta">{t.artist || 'Unknown artist'} {t.album ? `· ${t.album}` : ''}</p>

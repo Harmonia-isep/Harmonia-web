@@ -26,3 +26,6 @@ export const addToPlaylist = (playlistId, trackId) => API.post(`/playlists/${pla
 export const removeFromPlaylist = (playlistId, trackId) => API.delete(`/playlists/${playlistId}/remove/${trackId}`);
 export const deletePlaylist = (playlistId) => API.delete(`/playlists/${playlistId}`);
 export const getSharedPlaylist = (token) => API.get(`/playlists/shared/${token}`);
+
+// album artwork image url for a track
+export const getArtworkUrl = (trackId) => `http://localhost:8000/api/tracks/${trackId}/artwork`;
