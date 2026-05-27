@@ -98,7 +98,7 @@
 }
 
 .queue-item.status-done {
-  border-color: rgba(50, 215, 75, 0.25);
+  border-color: rgba(255, 59, 48, 0.35);
 }
 
 .queue-item.status-error {
@@ -106,11 +106,11 @@
 }
 
 .queue-item.status-analyzing {
-  border-color: rgba(139, 124, 246, 0.25);
+  border-color: rgba(255, 59, 48, 0.2);
 }
 
 .queue-item.status-uploading {
-  border-color: rgba(100, 210, 255, 0.25);
+  border-color: rgba(255, 59, 48, 0.2);
 }
 
 .queue-row {
@@ -129,9 +129,9 @@
 }
 
 .status-pending .queue-status-dot { background: var(--text-tertiary); }
-.status-uploading .queue-status-dot { background: var(--info); animation: pulse 1.2s infinite; }
-.status-analyzing .queue-status-dot { background: var(--accent); animation: pulse 1.2s infinite; }
-.status-done .queue-status-dot { background: var(--success); }
+.status-uploading .queue-status-dot { background: #8a1f1a; animation: pulse 1.2s infinite; }
+.status-analyzing .queue-status-dot { background: #b32820; animation: pulse 1.2s infinite; }
+.status-done .queue-status-dot { background: var(--accent); }
 .status-error .queue-status-dot { background: var(--error); }
 
 @keyframes pulse {
