@@ -20,8 +20,8 @@
 }
 
 .track-list h2 span {
-  color: var(--text-secondary);
-  font-weight: 400;
+  color: var(--accent);
+  font-weight: 600;
   font-size: 1rem;
 }
 
@@ -144,6 +144,11 @@
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.03em;
+}
+
+/* first analysis card (BPM) gets the accent treatment */
+.analysis-card:first-child .value {
+  color: var(--accent);
 }
 
 .value.small {
