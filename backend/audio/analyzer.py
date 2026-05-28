@@ -9,7 +9,7 @@ def analyze_audio(file_path: str) -> dict:
 
         # BPM
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        bpm = float(round(tempo, 2))
+        bpm = float(round(float(tempo[0]), 2))
 
         # Key detection using chroma
         chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
@@ -24,13 +24,43 @@ def analyze_audio(file_path: str) -> dict:
         minor_corr = np.corrcoef(chroma_mean, np.roll(minor_profile, key_index))[0,1]
         scale = "major" if major_corr > minor_corr else "minor"
 
-        # Energy (RMS)
+        # Energy - how intense/energetic the track feels.
+        # We combine two things: loudness (RMS) and brightness (spectral
+        # centroid - energetic songs have more high-frequency content).
         rms = librosa.feature.rms(y=y)
-        energy = float(round(float(np.mean(rms)), 4))
+        rms_mean = float(np.mean(rms))
 
-        # Danceability proxy (beat strength consistency)
+        # loudness part: RMS typically sits around 0.05-0.3, so scale it up
+        # into a 0-1 range (0.3 RMS and above counts as fully loud)
+        loudness = min(1.0, rms_mean / 0.3)
+
+        # brightness part: spectral centroid is the "center of mass" of the
+        # frequencies. Higher = brighter = more energetic. Normalize against
+        # a typical ceiling of 4000 Hz.
+        centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
+        brightness = min(1.0, float(np.mean(centroid)) / 4000.0)
+
+        # blend them - loudness matters a bit more than brightness
+        energy = float(round(0.6 * loudness + 0.4 * brightness, 4))
+
+        # Danceability proxy - how steady and strong the beat is.
+        # A danceable track has a strong, regular pulse. We measure how
+        # consistent the gaps between beats are: even spacing = danceable.
         onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-        danceability = float(round(float(np.std(onset_env) / (np.mean(onset_env) + 1e-6)), 4))
+        _, beat_frames = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
+
+        if len(beat_frames) > 2:
+            # time gaps between consecutive beats
+            beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+            intervals = np.diff(beat_times)
+
+            # low variation in beat spacing = steady rhythm = more danceable.
+            # coefficient of variation (std/mean), then invert so steadier = higher.
+            cv = np.std(intervals) / (np.mean(intervals) + 1e-6)
+            danceability = float(round(float(max(0.0, min(1.0, 1.0 - cv))), 4))
+        else:
+            # not enough beats detected to judge
+            danceability = 0.0
 
         return {
             "bpm": bpm,
@@ -40,10 +70,5 @@ def analyze_audio(file_path: str) -> dict:
             "danceability": danceability
         }
     except Exception as e:
-        return {
-            "bpm": 0.0,
-            "key": "Unknown",
-            "scale": "Unknown",
-            "energy": 0.0,
-            "danceability": 0.0
-        }
+        print(f"Analysis error: {e}")
+        raise e

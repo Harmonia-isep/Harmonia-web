@@ -20,8 +20,8 @@
 }
 
 .track-list h2 span {
-  color: var(--text-secondary);
-  font-weight: 400;
+  color: var(--accent);
+  font-weight: 600;
   font-size: 1rem;
 }
 
@@ -58,6 +58,24 @@
   color: var(--text-secondary);
   font-size: 1.125rem;
   transition: all var(--transition);
+  overflow: hidden;
+  position: relative;
+}
+
+/* album art fills the icon box */
+.track-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* music note shown only when there is no artwork */
+.track-icon-fallback {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .track-item.active .track-icon {
@@ -146,6 +164,11 @@
   letter-spacing: -0.03em;
 }
 
+/* first analysis card (BPM) gets the accent treatment */
+.analysis-card:first-child .value {
+  color: var(--accent);
+}
+
 .value.small {
   font-size: 0.875rem;
   font-weight: 500;
@@ -160,4 +183,172 @@
 .empty {
   color: var(--text-tertiary);
   font-size: 0.9375rem;
+}
+
+/* search and filter */
+.search-bar {
+  margin-bottom: 10px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.search-bar input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-bar input:focus {
+  border-color: var(--border-hover);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.filter-bar select,
+.filter-bar input {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.filter-bar select:focus,
+.filter-bar input:focus {
+  border-color: var(--border-hover);
+}
+
+.filter-bar input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.filter-bar select {
+  min-width: 96px;
+  cursor: pointer;
+}
+
+.filter-bar input {
+  width: 84px;
+}
+
+.export-btn {
+  margin-left: auto;
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+
+.export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* add to playlist button + menu */
+.add-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.add-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.add-menu {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  min-width: 160px;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.add-menu-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-menu-item:hover {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.add-menu-empty {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  padding: 8px 10px;
+}
+
+/* toast confirmation */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: white;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(255, 59, 48, 0.3);
+  animation: fadeIn 0.2s ease;
 }

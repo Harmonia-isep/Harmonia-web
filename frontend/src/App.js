@@ -3,6 +3,8 @@ import Auth from './components/Auth';
 import Landing from './components/Landing';
 import Library from './components/Library';
 import Upload from './components/Upload';
+import Playlists from './components/Playlists';
+import SharedPlaylist from './components/SharedPlaylist';
 import { createGuestUser } from './api';
 import './App.css';
 
@@ -12,6 +14,10 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [loading, setLoading] = useState(true);
+
+  // check if this is a shared playlist link
+  const sharedMatch = window.location.pathname.match(/^\/shared\/(.+)$/);
+  const sharedToken = sharedMatch ? sharedMatch[1] : null;
 
   // Restore user from localStorage
   useEffect(() => {
@@ -62,6 +68,22 @@ export default function App() {
 
   if (loading) return null;
 
+  // shared playlist links open a standalone public page
+  if (sharedToken) {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1 className="logo" onClick={() => { window.location.href = '/'; }} style={{ cursor: 'pointer' }}>
+            Harmonia
+          </h1>
+        </header>
+        <main className="main">
+          <SharedPlaylist token={sharedToken} />
+        </main>
+      </div>
+    );
+  }
+
   const isLanding = !user;
 
   return (
@@ -89,6 +111,7 @@ export default function App() {
             <>
               <button className={page === 'library' ? 'active' : ''} onClick={() => setPage('library')}>Library</button>
               <button className={page === 'upload' ? 'active' : ''} onClick={() => setPage('upload')}>Upload</button>
+              <button className={page === 'playlists' ? 'active' : ''} onClick={() => setPage('playlists')}>Playlists</button>
             </>
           )}
         </nav>
@@ -118,6 +141,7 @@ export default function App() {
         <main className="main">
           {page === 'library' && <Library user={user} />}
           {page === 'upload' && <Upload user={user} onUploaded={() => setPage('library')} />}
+          {page === 'playlists' && <Playlists user={user} />}
         </main>
       )}
 

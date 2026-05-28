@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.models.database import engine
 from backend.models.models import Base
-from backend.api import tracks, users, analysis
+from backend.api import tracks, users, analysis, playlists
 import os
 
 Base.metadata.create_all(bind=engine)
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(tracks.router, prefix="/api/tracks", tags=["tracks"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
+app.include_router(playlists.router, prefix="/api/playlists", tags=["playlists"])
 
 @app.get("/")
 def root():

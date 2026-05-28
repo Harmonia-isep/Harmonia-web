@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserTracks, getAnalysis } from '../api';
+import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl, getUserPlaylists, addToPlaylist } from '../api';
 import Waveform from './Waveform';
 import './Library.css';
 
@@ -10,12 +10,42 @@ export default function Library({ user }) {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
 
-  useEffect(() => {
-    getUserTracks(user.user_id).then(res => {
+  // search and filter state
+  const [searchText, setSearchText] = useState('');
+  const [filterKey, setFilterKey] = useState('');
+  const [bpmMin, setBpmMin] = useState('');
+  const [bpmMax, setBpmMax] = useState('');
+
+  // playlists for the "add to playlist" menu
+  const [playlists, setPlaylists] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(null); // track id whose menu is open
+  const [toast, setToast] = useState('');
+
+  // fetch tracks, re-runs when filters change
+  const fetchTracks = () => {
+    setLoading(true);
+    const params = {};
+    if (searchText) params.search = searchText;
+    if (filterKey) params.key = filterKey;
+    if (bpmMin) params.bpm_min = bpmMin;
+    if (bpmMax) params.bpm_max = bpmMax;
+
+    searchTracks(user.user_id, params).then(res => {
       setTracks(res.data);
       setLoading(false);
     }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchTracks();
+    getUserPlaylists(user.user_id).then(res => setPlaylists(res.data)).catch(() => {});
   }, [user]);
+
+  // search when user stops typing for 400ms
+  useEffect(() => {
+    const timer = setTimeout(() => fetchTracks(), 400);
+    return () => clearTimeout(timer);
+  }, [searchText, filterKey, bpmMin, bpmMax]);
 
   const selectTrack = async (track) => {
     setSelected(track);
@@ -30,19 +60,83 @@ export default function Library({ user }) {
     setAnalyzing(false);
   };
 
+  // add a track to a chosen playlist
+  const handleAddToPlaylist = async (trackId, playlistId, playlistName) => {
+    setMenuOpen(null);
+    try {
+      await addToPlaylist(playlistId, trackId);
+      setToast(`Added to ${playlistName}`);
+      setTimeout(() => setToast(''), 2000);
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Could not add track';
+      setToast(msg);
+      setTimeout(() => setToast(''), 2000);
+    }
+  };
+
   if (loading) return <p className="loading">Loading your library...</p>;
 
   return (
     <div className="library">
       <div className="track-list">
         <h2>Your Library <span>({tracks.length})</span></h2>
+
+        {/* search and filter bar */}
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Search by title or artist..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
+        <div className="filter-bar">
+          <select value={filterKey} onChange={(e) => setFilterKey(e.target.value)}>
+            <option value="">All keys</option>
+            {['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].map(k => (
+              <option key={k} value={k}>{k}</option>
+            ))}
+          </select>
+          <input type="number" placeholder="BPM min" value={bpmMin} onChange={(e) => setBpmMin(e.target.value)} />
+          <input type="number" placeholder="BPM max" value={bpmMax} onChange={(e) => setBpmMax(e.target.value)} />
+          <a href={exportCSV(user.user_id)} className="export-btn" download>Export CSV</a>
+        </div>
         {tracks.length === 0 && <p className="empty">No tracks yet. Upload your first track!</p>}
         {tracks.map(t => (
           <div key={t.id} className={`track-item ${selected?.id === t.id ? 'active' : ''}`} onClick={() => selectTrack(t)}>
-            <div className="track-icon">&#9834;</div>
+            <div className="track-icon">
+              <img
+                src={getArtworkUrl(t.id)}
+                alt=""
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+              />
+              <span className="track-icon-fallback">&#9834;</span>
+            </div>
             <div className="track-info">
               <p className="track-title">{t.title}</p>
               <p className="track-meta">{t.artist || 'Unknown artist'} {t.album ? `· ${t.album}` : ''}</p>
+            </div>
+            <div className="add-wrapper">
+              <button
+                className="add-btn"
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === t.id ? null : t.id); }}
+              >
+                +
+              </button>
+              {menuOpen === t.id && (
+                <div className="add-menu" onClick={(e) => e.stopPropagation()}>
+                  {playlists.length === 0 && <p className="add-menu-empty">No playlists yet</p>}
+                  {playlists.map(p => (
+                    <button
+                      key={p.id}
+                      className="add-menu-item"
+                      onClick={() => handleAddToPlaylist(t.id, p.id, p.name)}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -83,6 +177,7 @@ export default function Library({ user }) {
           </div>
         )}
       </div>
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
