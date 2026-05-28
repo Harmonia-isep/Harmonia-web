@@ -3,6 +3,7 @@ import Auth from './components/Auth';
 import Landing from './components/Landing';
 import Library from './components/Library';
 import Upload from './components/Upload';
+import Playlists from './components/Playlists';
 import { createGuestUser } from './api';
 import './App.css';
 
@@ -89,6 +90,7 @@ export default function App() {
             <>
               <button className={page === 'library' ? 'active' : ''} onClick={() => setPage('library')}>Library</button>
               <button className={page === 'upload' ? 'active' : ''} onClick={() => setPage('upload')}>Upload</button>
+              <button className={page === 'playlists' ? 'active' : ''} onClick={() => setPage('playlists')}>Playlists</button>
             </>
           )}
         </nav>
@@ -118,6 +120,7 @@ export default function App() {
         <main className="main">
           {page === 'library' && <Library user={user} />}
           {page === 'upload' && <Upload user={user} onUploaded={() => setPage('library')} />}
+          {page === 'playlists' && <Playlists user={user} />}
         </main>
       )}
 
