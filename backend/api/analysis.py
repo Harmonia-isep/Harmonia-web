@@ -14,10 +14,14 @@ async def analyze_track(track_id: int, background_tasks: BackgroundTasks, db: Se
         raise HTTPException(status_code=404, detail="Track not found")
     if not os.path.exists(track.file_path):
         raise HTTPException(status_code=404, detail="Audio file not found")
-    background_tasks.add_task(run_analysis, track_id, track.file_path, db)
+    background_tasks.add_task(run_analysis, track_id, track.file_path)
     return {"message": "Analysis started", "track_id": track_id}
 
-def run_analysis(track_id: int, file_path: str, db: Session):
+def run_analysis(track_id: int, file_path: str):
+    # This runs as a background task AFTER the request has returned, so it
+    # must open its own database session - the request's session is already
+    # closed by then. pool_pre_ping (set on the engine) ensures this session
+    # gets a live connection even if Neon dropped an idle one.
     from backend.models.database import SessionLocal
     db = SessionLocal()
     try:
