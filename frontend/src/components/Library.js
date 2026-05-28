@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl, getUserPlaylists, addToPlaylist } from '../api';
 import Waveform from './Waveform';
+import Spectrum from './Spectrum';
 import './Library.css';
 
 export default function Library({ user }) {
@@ -174,6 +175,7 @@ export default function Library({ user }) {
                 </div>
               </div>
             )}
+            {analysis && <Spectrum trackId={selected.id} />}
           </div>
         )}
       </div>
