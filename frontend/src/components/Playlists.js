@@ -16,6 +16,7 @@ export default function Playlists({ user }) {
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [toast, setToast] = useState('');
 
   // load all the user's playlists
   const loadPlaylists = () => {
@@ -102,6 +103,15 @@ export default function Playlists({ user }) {
     }
   };
 
+  // copy a shareable link for a playlist
+  const handleShare = (e, playlist) => {
+    e.stopPropagation();
+    const link = `${window.location.origin}/shared/${playlist.share_token}`;
+    navigator.clipboard.writeText(link);
+    setToast('Share link copied!');
+    setTimeout(() => setToast(''), 2000);
+  };
+
   if (loading) return <p className="loading">Loading your playlists...</p>;
 
   return (
@@ -141,6 +151,12 @@ export default function Playlists({ user }) {
                 {p.track_count} track{p.track_count !== 1 ? 's' : ''}
               </p>
             </div>
+            <button
+              className="share-btn"
+              onClick={(e) => handleShare(e, p)}
+            >
+              Share
+            </button>
             <button
               className="delete-btn"
               onClick={(e) => {
@@ -204,6 +220,7 @@ export default function Playlists({ user }) {
           </div>
         )}
       </div>
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
