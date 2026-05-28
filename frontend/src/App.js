@@ -5,6 +5,7 @@ import Library from './components/Library';
 import Upload from './components/Upload';
 import Playlists from './components/Playlists';
 import SharedPlaylist from './components/SharedPlaylist';
+import Compare from './components/Compare';
 import { createGuestUser } from './api';
 import './App.css';
 
@@ -112,6 +113,7 @@ export default function App() {
               <button className={page === 'library' ? 'active' : ''} onClick={() => setPage('library')}>Library</button>
               <button className={page === 'upload' ? 'active' : ''} onClick={() => setPage('upload')}>Upload</button>
               <button className={page === 'playlists' ? 'active' : ''} onClick={() => setPage('playlists')}>Playlists</button>
+              <button className={page === 'compare' ? 'active' : ''} onClick={() => setPage('compare')}>Compare</button>
             </>
           )}
         </nav>
@@ -142,6 +144,7 @@ export default function App() {
           {page === 'library' && <Library user={user} />}
           {page === 'upload' && <Upload user={user} onUploaded={() => setPage('library')} />}
           {page === 'playlists' && <Playlists user={user} />}
+          {page === 'compare' && <Compare user={user} />}
         </main>
       )}
 
