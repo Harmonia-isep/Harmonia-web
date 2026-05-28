@@ -60,7 +60,7 @@ export default function Library({ user }) {
     // analysis runs in the background on the server and may not be ready
     // the instant we ask. So we poll: check every 2s, up to ~30s, and show
     // the results the moment they appear - no need to click away and back.
-    const maxTries = 15;
+    const maxTries = 60;  // poll for up to 2 minutes - Render's free tier CPU is slow
     let found = null;
 
     for (let attempt = 0; attempt < maxTries; attempt++) {
