@@ -29,3 +29,6 @@ export const getSharedPlaylist = (token) => API.get(`/playlists/shared/${token}`
 
 // album artwork image url for a track
 export const getArtworkUrl = (trackId) => `http://localhost:8000/api/tracks/${trackId}/artwork`;
+
+// reorder tracks in a playlist - pass array of track ids in new order
+export const reorderPlaylist = (playlistId, trackIds) => API.put(`/playlists/${playlistId}/reorder`, trackIds);
