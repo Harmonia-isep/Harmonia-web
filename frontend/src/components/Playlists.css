@@ -275,3 +275,42 @@
   box-shadow: 0 8px 24px rgba(255, 59, 48, 0.3);
   animation: fadeIn 0.2s ease;
 }
+
+/* public shared playlist page */
+.shared-page {
+  max-width: 640px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease;
+}
+
+.shared-header {
+  margin-bottom: 28px;
+}
+
+.shared-label {
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.shared-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 8px 0 4px;
+}
+
+.shared-count {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+.shared-tracks {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 20px;
+}
