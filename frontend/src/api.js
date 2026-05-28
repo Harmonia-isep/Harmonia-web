@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API = axios.create({ baseURL: 'http://localhost:8000/api' });
+// Where the backend lives. In production this is set via REACT_APP_API_URL
+// to the Render URL. Locally falls back to localhost.
+const BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+const API = axios.create({ baseURL: `${BASE}/api` });
 
 export const createGuestUser = () => API.post('/users/guest');
 export const registerUser = (data) => API.post('/users/register', data);
@@ -10,13 +14,13 @@ export const getUserTracks = (userId) => API.get(`/tracks/user/${userId}`);
 export const getTrack = (trackId) => API.get(`/tracks/${trackId}`);
 export const analyzeTrack = (trackId) => API.post(`/analysis/analyze/${trackId}`);
 export const getAnalysis = (trackId) => API.get(`/analysis/${trackId}`);
-export const getAudioUrl = (trackId) => `http://localhost:8000/api/tracks/${trackId}/audio`;
+export const getAudioUrl = (trackId) => `${BASE}/api/tracks/${trackId}/audio`;
 
 // search and filter tracks
 export const searchTracks = (userId, params) => API.get(`/tracks/user/${userId}`, { params });
 
 // export library as CSV
-export const exportCSV = (userId) => `http://localhost:8000/api/tracks/user/${userId}/export`;
+export const exportCSV = (userId) => `${BASE}/api/tracks/user/${userId}/export`;
 
 // playlists
 export const createPlaylist = (name, userId) => API.post(`/playlists/create?name=${name}&user_id=${userId}`);
@@ -28,7 +32,7 @@ export const deletePlaylist = (playlistId) => API.delete(`/playlists/${playlistI
 export const getSharedPlaylist = (token) => API.get(`/playlists/shared/${token}`);
 
 // album artwork image url for a track
-export const getArtworkUrl = (trackId) => `http://localhost:8000/api/tracks/${trackId}/artwork`;
+export const getArtworkUrl = (trackId) => `${BASE}/api/tracks/${trackId}/artwork`;
 
 // reorder tracks in a playlist - pass array of track ids in new order
 export const reorderPlaylist = (playlistId, trackIds) => API.put(`/playlists/${playlistId}/reorder`, trackIds);
