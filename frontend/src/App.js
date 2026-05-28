@@ -4,6 +4,7 @@ import Landing from './components/Landing';
 import Library from './components/Library';
 import Upload from './components/Upload';
 import Playlists from './components/Playlists';
+import SharedPlaylist from './components/SharedPlaylist';
 import { createGuestUser } from './api';
 import './App.css';
 
@@ -13,6 +14,10 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [loading, setLoading] = useState(true);
+
+  // check if this is a shared playlist link
+  const sharedMatch = window.location.pathname.match(/^\/shared\/(.+)$/);
+  const sharedToken = sharedMatch ? sharedMatch[1] : null;
 
   // Restore user from localStorage
   useEffect(() => {
@@ -62,6 +67,22 @@ export default function App() {
   };
 
   if (loading) return null;
+
+  // shared playlist links open a standalone public page
+  if (sharedToken) {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1 className="logo" onClick={() => { window.location.href = '/'; }} style={{ cursor: 'pointer' }}>
+            Harmonia
+          </h1>
+        </header>
+        <main className="main">
+          <SharedPlaylist token={sharedToken} />
+        </main>
+      </div>
+    );
+  }
 
   const isLanding = !user;
 
