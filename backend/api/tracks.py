@@ -30,6 +30,17 @@ async def upload_track(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    # guard against oversized files. The free-tier server has limited RAM,
+    # and analysing a very large file can exceed it. A normal song is well
+    # under 20 MB, so reject anything bigger with a clear message.
+    max_size = 20 * 1024 * 1024  # 20 MB
+    if os.path.getsize(file_path) > max_size:
+        os.remove(file_path)
+        raise HTTPException(
+            status_code=413,
+            detail="File too large. Please upload a track under 20 MB (a normal-length song)."
+        )
+
     # try to pull album art out of the file's metadata
     artwork_path = extract_artwork(file_path)
 

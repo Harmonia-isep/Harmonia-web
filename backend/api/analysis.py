@@ -65,7 +65,9 @@ def get_spectrum(track_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Audio file not found")
 
     # load a chunk of the track
-    y, sr = librosa.load(track.file_path, sr=None, duration=30)
+    # mono at 22050 Hz keeps memory low (free-tier hosting has limited RAM).
+    # 30s is enough to represent the track's frequency content.
+    y, sr = librosa.load(track.file_path, sr=22050, mono=True, duration=30)
 
     # run an FFT to get the frequency content
     fft = np.abs(np.fft.rfft(y))

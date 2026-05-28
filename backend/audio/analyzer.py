@@ -5,7 +5,12 @@ KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 def analyze_audio(file_path: str) -> dict:
     try:
-        y, sr = librosa.load(file_path, sr=None, duration=60)
+        # load mono at 22050 Hz (not the full 44100) and cap at 60s.
+        # this roughly halves the memory librosa needs, which keeps us
+        # under the hosting RAM limit. 22050 Hz is plenty for BPM, key,
+        # energy and spectrum analysis - the musical info lives well below
+        # the 11 kHz ceiling that sample rate captures.
+        y, sr = librosa.load(file_path, sr=22050, mono=True, duration=60)
 
         # BPM
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
@@ -43,23 +48,37 @@ def analyze_audio(file_path: str) -> dict:
         # blend them - loudness matters a bit more than brightness
         energy = float(round(0.6 * loudness + 0.4 * brightness, 4))
 
-        # Danceability proxy - how steady and strong the beat is.
-        # A danceable track has a strong, regular pulse. We measure how
-        # consistent the gaps between beats are: even spacing = danceable.
+        # Danceability - combines two things that make a track danceable:
+        #   1. a steady beat (consistent spacing between beats)
+        #   2. a strong, punchy rhythm (how much the beats stand out)
+        # Using only steadiness made every produced track score ~99%, since
+        # they all have regular beats. Adding pulse strength spreads the
+        # scores out so a driving groove scores higher than a soft one.
         onset_env = librosa.onset.onset_strength(y=y, sr=sr)
         _, beat_frames = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
 
         if len(beat_frames) > 2:
-            # time gaps between consecutive beats
             beat_times = librosa.frames_to_time(beat_frames, sr=sr)
             intervals = np.diff(beat_times)
 
-            # low variation in beat spacing = steady rhythm = more danceable.
-            # coefficient of variation (std/mean), then invert so steadier = higher.
+            # steadiness: low variation in beat spacing = steady (0-1)
             cv = np.std(intervals) / (np.mean(intervals) + 1e-6)
-            danceability = float(round(float(max(0.0, min(1.0, 1.0 - cv))), 4))
+            steadiness = max(0.0, min(1.0, 1.0 - cv))
+
+            # pulse strength: how strong the beats are relative to the
+            # overall signal. We compare the onset strength AT the beats
+            # to the average onset strength everywhere.
+            beat_strength = np.mean(onset_env[beat_frames])
+            overall = np.mean(onset_env) + 1e-6
+            punch = beat_strength / overall
+            # punch realistically ranges ~3 (soft) to ~9 (very punchy) for
+            # music, so map that window into 0-1 to get real separation.
+            punch = max(0.0, min(1.0, (punch - 3.0) / 6.0))
+
+            # punch carries most of the signal since steadiness is nearly
+            # constant across produced tracks; it acts as a small modifier.
+            danceability = float(round(0.8 * punch + 0.2 * steadiness, 4))
         else:
-            # not enough beats detected to judge
             danceability = 0.0
 
         return {
