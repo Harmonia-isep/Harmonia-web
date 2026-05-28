@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl, getUserPlaylists, addToPlaylist } from '../api';
+import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl, getUserPlaylists, addToPlaylist, getRecommendations } from '../api';
 import Waveform from './Waveform';
 import Spectrum from './Spectrum';
 import './Library.css';
@@ -21,6 +21,7 @@ export default function Library({ user }) {
   const [playlists, setPlaylists] = useState([]);
   const [menuOpen, setMenuOpen] = useState(null); // track id whose menu is open
   const [toast, setToast] = useState('');
+  const [recs, setRecs] = useState([]);
 
   // fetch tracks, re-runs when filters change
   const fetchTracks = () => {
@@ -59,6 +60,14 @@ export default function Library({ user }) {
       setAnalysis(null);
     }
     setAnalyzing(false);
+
+    // also load harmonic mixing recommendations
+    try {
+      const rec = await getRecommendations(track.id);
+      setRecs(rec.data.recommendations || []);
+    } catch {
+      setRecs([]);
+    }
   };
 
   // add a track to a chosen playlist
@@ -176,6 +185,31 @@ export default function Library({ user }) {
               </div>
             )}
             {analysis && <Spectrum trackId={selected.id} />}
+            {analysis && (
+              <div className="recs">
+                <span className="recs-label">Mixes Well With</span>
+                {recs.length === 0 && (
+                  <p className="recs-empty">No harmonic matches in your library yet.</p>
+                )}
+                {recs.map((r) => (
+                  <div
+                    key={r.track_id}
+                    className="rec-item"
+                    onClick={() => {
+                      const t = tracks.find((x) => x.id === r.track_id);
+                      if (t) selectTrack(t);
+                    }}
+                  >
+                    <span className="rec-camelot">{r.camelot}</span>
+                    <div className="rec-info">
+                      <p className="rec-title">{r.title}</p>
+                      <p className="rec-meta">{r.artist || 'Unknown artist'}</p>
+                    </div>
+                    <span className="rec-bpm">{Math.round(r.bpm)} BPM</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
