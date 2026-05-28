@@ -9,7 +9,7 @@ def analyze_audio(file_path: str) -> dict:
 
         # BPM
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        bpm = float(round(float(tempo[0]), 2))
+        bpm = round(float(tempo[0]))
 
         # Key detection using chroma
         chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
