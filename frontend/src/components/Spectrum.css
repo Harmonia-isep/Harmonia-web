@@ -1,0 +1,42 @@
+.spectrum {
+  margin-top: 24px;
+}
+
+.spectrum-header {
+  margin-bottom: 10px;
+}
+
+.spectrum-label {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.spectrum-canvas {
+  width: 100%;
+  height: 120px;
+  display: block;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.spectrum-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+
+.spectrum-axis span {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+}
+
+.spectrum-loading {
+  margin-top: 24px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
