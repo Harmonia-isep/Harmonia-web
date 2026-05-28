@@ -35,3 +35,6 @@ export const reorderPlaylist = (playlistId, trackIds) => API.put(`/playlists/${p
 
 // frequency spectrum data for a track's FFT chart
 export const getSpectrum = (trackId) => API.get(`/analysis/${trackId}/spectrum`);
+
+// harmonic mixing recommendations for a track
+export const getRecommendations = (trackId) => API.get(`/analysis/${trackId}/recommendations`);
