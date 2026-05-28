@@ -32,3 +32,6 @@ export const getArtworkUrl = (trackId) => `http://localhost:8000/api/tracks/${tr
 
 // reorder tracks in a playlist - pass array of track ids in new order
 export const reorderPlaylist = (playlistId, trackIds) => API.put(`/playlists/${playlistId}/reorder`, trackIds);
+
+// frequency spectrum data for a track's FFT chart
+export const getSpectrum = (trackId) => API.get(`/analysis/${trackId}/spectrum`);
