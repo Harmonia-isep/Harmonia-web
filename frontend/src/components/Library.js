@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl, getUserPlaylists, addToPlaylist, getRecommendations } from '../api';
 import Waveform from './Waveform';
 import Spectrum from './Spectrum';
@@ -22,6 +22,7 @@ export default function Library({ user }) {
   const [menuOpen, setMenuOpen] = useState(null); // track id whose menu is open
   const [toast, setToast] = useState('');
   const [recs, setRecs] = useState([]);
+  const selectedIdRef = useRef(null);
 
   // fetch tracks, re-runs when filters change
   const fetchTracks = () => {
@@ -50,23 +51,45 @@ export default function Library({ user }) {
   }, [searchText, filterKey, bpmMin, bpmMax]);
 
   const selectTrack = async (track) => {
+    selectedIdRef.current = track.id;
     setSelected(track);
     setAnalysis(null);
+    setRecs([]);
     setAnalyzing(true);
-    try {
-      const res = await getAnalysis(track.id);
-      setAnalysis(res.data);
-    } catch {
-      setAnalysis(null);
+
+    // analysis runs in the background on the server and may not be ready
+    // the instant we ask. So we poll: check every 2s, up to ~30s, and show
+    // the results the moment they appear - no need to click away and back.
+    const maxTries = 15;
+    let found = null;
+
+    for (let attempt = 0; attempt < maxTries; attempt++) {
+      try {
+        const res = await getAnalysis(track.id);
+        found = res.data;
+        break; // got it
+      } catch {
+        // not ready yet - wait 2 seconds and try again
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
     }
+
+    // if the user clicked a different track while we were polling, drop this
+    if (selectedIdRef.current !== track.id) return;
+
+    setAnalysis(found);
     setAnalyzing(false);
 
-    // also load harmonic mixing recommendations
-    try {
-      const rec = await getRecommendations(track.id);
-      setRecs(rec.data.recommendations || []);
-    } catch {
-      setRecs([]);
+    // once analysis exists, load harmonic mixing recommendations
+    if (found && selectedIdRef.current === track.id) {
+      try {
+        const rec = await getRecommendations(track.id);
+        if (selectedIdRef.current === track.id) {
+          setRecs(rec.data.recommendations || []);
+        }
+      } catch {
+        setRecs([]);
+      }
     }
   };
 
@@ -157,8 +180,8 @@ export default function Library({ user }) {
           <div>
             <h2>{selected.title}</h2>
             <p className="track-meta">{selected.artist || 'Unknown artist'}</p>
-            {analyzing && <p className="loading">Loading analysis...</p>}
-            {!analyzing && !analysis && <p className="empty">No analysis yet. Re-upload to trigger analysis.</p>}
+            {analyzing && <p className="loading analyzing-pulse">Analyzing track... this can take a few seconds</p>}
+            {!analyzing && !analysis && <p className="empty">Analysis is taking longer than expected. Try selecting the track again.</p>}
             <Waveform trackId={selected.id} />
             {analysis && (
               <div className="analysis-grid">
