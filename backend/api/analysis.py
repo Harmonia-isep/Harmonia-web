@@ -79,18 +79,29 @@ def get_spectrum(track_id: int, db: Session = Depends(get_db)):
     freqs = freqs[mask]
     fft = fft[mask]
 
-    # split into equal bands and average each one
-    band_size = len(fft) // num_bands
+    # group frequencies into bands on a LOG scale across the frequency axis.
+    # human hearing is logarithmic - we perceive octaves, not linear Hz - so
+    # log-spaced bands give a far more natural looking spectrum than equal ones.
+    log_edges = np.logspace(np.log10(20), np.log10(max_freq), num_bands + 1)
+
     bands = []
     for i in range(num_bands):
-        start = i * band_size
-        end = start + band_size
-        chunk = fft[start:end]
-        if len(chunk) > 0:
-            bands.append(float(np.mean(chunk)))
+        lo, hi = log_edges[i], log_edges[i + 1]
+        idx = np.where((freqs >= lo) & (freqs < hi))[0]
+        if len(idx) > 0:
+            bands.append(float(np.mean(fft[idx])))
+        else:
+            bands.append(0.0)
 
-    # normalize so the tallest band is 1.0 (makes it easy to draw)
-    peak = max(bands) if bands else 1.0
-    bands = [round(b / peak, 4) for b in bands]
+    # convert magnitudes to decibels (log scale on the amplitude axis too).
+    # this tames the huge bass spike and lifts the quieter high frequencies,
+    # which is exactly how real spectrum analyzers display sound.
+    bands = np.array(bands)
+    bands = 20 * np.log10(bands + 1e-6)  # to dB
+
+    # shift so the quietest is 0, then normalize so the loudest is 1
+    bands = bands - bands.min()
+    peak = bands.max() if bands.max() > 0 else 1.0
+    bands = [round(float(b / peak), 4) for b in bands]
 
     return {"track_id": track_id, "bands": bands}
