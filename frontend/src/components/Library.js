@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl } from '../api';
+import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl, getUserPlaylists, addToPlaylist } from '../api';
 import Waveform from './Waveform';
 import './Library.css';
 
@@ -15,6 +15,11 @@ export default function Library({ user }) {
   const [filterKey, setFilterKey] = useState('');
   const [bpmMin, setBpmMin] = useState('');
   const [bpmMax, setBpmMax] = useState('');
+
+  // playlists for the "add to playlist" menu
+  const [playlists, setPlaylists] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(null); // track id whose menu is open
+  const [toast, setToast] = useState('');
 
   // fetch tracks, re-runs when filters change
   const fetchTracks = () => {
@@ -33,6 +38,7 @@ export default function Library({ user }) {
 
   useEffect(() => {
     fetchTracks();
+    getUserPlaylists(user.user_id).then(res => setPlaylists(res.data)).catch(() => {});
   }, [user]);
 
   // search when user stops typing for 400ms
@@ -52,6 +58,20 @@ export default function Library({ user }) {
       setAnalysis(null);
     }
     setAnalyzing(false);
+  };
+
+  // add a track to a chosen playlist
+  const handleAddToPlaylist = async (trackId, playlistId, playlistName) => {
+    setMenuOpen(null);
+    try {
+      await addToPlaylist(playlistId, trackId);
+      setToast(`Added to ${playlistName}`);
+      setTimeout(() => setToast(''), 2000);
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Could not add track';
+      setToast(msg);
+      setTimeout(() => setToast(''), 2000);
+    }
   };
 
   if (loading) return <p className="loading">Loading your library...</p>;
@@ -96,6 +116,28 @@ export default function Library({ user }) {
               <p className="track-title">{t.title}</p>
               <p className="track-meta">{t.artist || 'Unknown artist'} {t.album ? `· ${t.album}` : ''}</p>
             </div>
+            <div className="add-wrapper">
+              <button
+                className="add-btn"
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === t.id ? null : t.id); }}
+              >
+                +
+              </button>
+              {menuOpen === t.id && (
+                <div className="add-menu" onClick={(e) => e.stopPropagation()}>
+                  {playlists.length === 0 && <p className="add-menu-empty">No playlists yet</p>}
+                  {playlists.map(p => (
+                    <button
+                      key={p.id}
+                      className="add-menu-item"
+                      onClick={() => handleAddToPlaylist(t.id, p.id, p.name)}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -135,6 +177,7 @@ export default function Library({ user }) {
           </div>
         )}
       </div>
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
