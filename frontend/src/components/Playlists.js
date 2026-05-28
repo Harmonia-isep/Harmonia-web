@@ -5,6 +5,7 @@ import {
   getPlaylistTracks,
   deletePlaylist,
   removeFromPlaylist,
+  reorderPlaylist,
 } from '../api';
 import './Playlists.css';
 
@@ -81,6 +82,26 @@ export default function Playlists({ user }) {
     }
   };
 
+  // move a track up or down in the list
+  const moveTrack = async (index, direction) => {
+    const newOrder = [...tracks];
+    const target = index + direction;
+
+    // can't move past the ends
+    if (target < 0 || target >= newOrder.length) return;
+
+    // swap the two tracks
+    [newOrder[index], newOrder[target]] = [newOrder[target], newOrder[index]];
+    setTracks(newOrder);
+
+    // tell the backend the new order
+    try {
+      await reorderPlaylist(selected.id, newOrder.map((t) => t.track_id));
+    } catch {
+      // ignore
+    }
+  };
+
   if (loading) return <p className="loading">Loading your playlists...</p>;
 
   return (
@@ -149,12 +170,28 @@ export default function Playlists({ user }) {
                 This playlist is empty. Add tracks from your library.
               </p>
             )}
-            {tracks.map((t) => (
+            {tracks.map((t, i) => (
               <div key={t.track_id} className="detail-track">
                 <span className="detail-pos">{t.position + 1}</span>
                 <div className="detail-info">
                   <p className="detail-title">{t.title}</p>
                   <p className="detail-artist">{t.artist || 'Unknown artist'}</p>
+                </div>
+                <div className="reorder-controls">
+                  <button
+                    className="reorder-btn"
+                    onClick={() => moveTrack(i, -1)}
+                    disabled={i === 0}
+                  >
+                    &#8593;
+                  </button>
+                  <button
+                    className="reorder-btn"
+                    onClick={() => moveTrack(i, 1)}
+                    disabled={i === tracks.length - 1}
+                  >
+                    &#8595;
+                  </button>
                 </div>
                 <button
                   className="remove-btn"

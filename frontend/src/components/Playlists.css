@@ -205,3 +205,36 @@
   color: var(--text-tertiary);
   font-size: 0.9375rem;
 }
+
+/* reorder up/down controls */
+.reorder-controls {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.reorder-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reorder-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
