@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from backend.models.database import get_db
-from backend.models.models import Track, User
+from backend.models.models import Track, User, Analysis, PlaylistTrack
 import shutil, os, uuid
 from backend.audio.artwork import extract_artwork
 
@@ -109,6 +109,9 @@ def delete_track(track_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Track not found")
     if os.path.exists(track.file_path):
         os.remove(track.file_path)
+    # remove dependent rows first so Postgres FK constraints (NO ACTION) hold.
+    db.query(PlaylistTrack).filter(PlaylistTrack.track_id == track_id).delete()
+    db.query(Analysis).filter(Analysis.track_id == track_id).delete()
     db.delete(track)
     db.commit()
     return {"message": "Track deleted"}

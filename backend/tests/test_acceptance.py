@@ -7,7 +7,7 @@ import io
 import numpy as np
 import soundfile as sf
 
-from backend.models.models import Track, Analysis
+from backend.models.models import Track, Analysis, Playlist, PlaylistTrack
 from backend.api.analysis import to_camelot, camelot_compatible
 from backend.audio.analyzer import analyze_audio
 
@@ -214,8 +214,24 @@ def us19_delete_track(client, db):
     db.commit()
     db.refresh(track)
     tid = track.id
+
+    # give the track an analysis and a playlist entry, so deletion must clean both
+    db.add(Analysis(track_id=tid, bpm=120, key="A", scale="minor",
+                    energy=0.5, danceability=0.4))
+    playlist = Playlist(name="Del PL", user_id=reg["id"], share_token="deltok19")
+    db.add(playlist)
+    db.commit()
+    db.refresh(playlist)
+    db.add(PlaylistTrack(playlist_id=playlist.id, track_id=tid, position=0))
+    db.commit()
+
     assert client.delete(f"/api/tracks/{tid}").status_code == 200
     assert client.get(f"/api/tracks/{tid}").status_code == 404
+
+    # dependent rows must be gone, not orphaned
+    db.expire_all()
+    assert db.query(Analysis).filter(Analysis.track_id == tid).first() is None
+    assert db.query(PlaylistTrack).filter(PlaylistTrack.track_id == tid).first() is None
 
 
 STORIES = [
