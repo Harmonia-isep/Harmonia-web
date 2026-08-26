@@ -354,36 +354,48 @@ class DescriptorEstimator(Protocol):
     def estimate(self, y: np.ndarray, sr: int) -> Descriptors: ...
 ```
 
+**Reordered after the Phase 4 baseline.** The confusion breakdown contradicts the
+original assumption that full-track audio would be the largest key-accuracy jump. Exact
+key is right only 34.7% of the time; the errors split into unrelated keys ("other",
+28.9%), fifths (17.5%), parallel / wrong-mode (12.9%), and relatives (6.0%). Two things
+stand out. Parallel mode confusion is a large bucket, and the binary diatonic templates
+for major and minor differ in one pitch class, so the mode discriminator is close to a
+coin flip. And the pervasive "other" errors say tonic selection is frequently wrong too.
+Audio-side improvements (full track, HPSS, CQT) will not fix either, so the key-profile
+and correlation work moves first. See `eval/baseline.md`.
+
 Then, in this order, re-running `eval/run` after each step:
 
-1. **Full track instead of 45s.** Drop `duration=45`. Analyze the whole file in
-   overlapping windows and aggregate. Expect the single largest key-accuracy jump,
-   because the current code analyzes the intro.
-2. **Tuning correction.** `librosa.estimate_tuning` feeding the chroma call. Cheap; real
+1. **Weighted key profiles + 24-rotation correlation.** Replace both the `argmax` tonic
+   selection and the one-pitch-class binary major/minor templates with correlation of the
+   mean chroma against all 24 rotations (12 tonics x major and minor) of weighted
+   profiles. Return the best match plus a confidence score plus the runner-up. Start with
+   Krumhansl-Schmuckler (1990), then add Temperley (2001) and Faraldo et al. (2016) EDMA
+   profiles; benchmark all three against each other and pick the winner as default,
+   keeping the others selectable. These are 12-element vectors from published papers;
+   implement them, cite them, stay MIT. This is aimed straight at the parallel-mode
+   confusion the baseline exposed.
+2. **Full track instead of 45s.** Drop `duration=45`. Analyze the whole file in
+   overlapping windows and aggregate. The current code analyzes only the intro.
+3. **Tuning correction.** `librosa.estimate_tuning` feeding the chroma call. Cheap; real
    fix for anything not mastered at A440.
-3. **HPSS.** Separate the harmonic component before chroma so percussion stops polluting
+4. **HPSS.** Separate the harmonic component before chroma so percussion stops polluting
    pitch classes. Pure CPU cost, which no longer matters.
-4. **`chroma_cqt`.** Log-spaced semitone-aligned bins. Replaces the `chroma_stft` chosen
+5. **`chroma_cqt`.** Log-spaced semitone-aligned bins. Replaces the `chroma_stft` chosen
    purely for Render's RAM ceiling.
-5. **24-rotation correlation.** Replace `argmax` tonic selection with correlation of the
-   mean chroma against all 12 rotations of both major and minor profiles. Return the best
-   match plus a confidence score plus the runner-up. Start with
-   Krumhansl-Schmuckler (1990).
-6. **Profile comparison.** Add Temperley (2001) and Faraldo et al. (2016) EDMA profiles.
-   These are 12-element vectors from published papers; implement them, cite them, stay
-   MIT. Benchmark all three and pick the winner as default. Keep the others selectable.
-7. **Tempo octave correction.** DJ-range prior plus onset-autocorrelation disambiguation
+6. **Tempo octave correction.** DJ-range prior plus onset-autocorrelation disambiguation
    for the half/double-time ambiguity.
-8. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred
+7. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred
    during the academic phase.
-9. **Honest energy and danceability.** Rebuild as a documented composite: EBU R128
-   integrated loudness via `pyloudnorm`, spectral flux, onset rate, pulse clarity,
-   low-band energy ratio. Recalibrate the constants against the Phase 4 histograms.
-   Publish the formula in the README and state plainly that these are heuristics with no
-   ground truth, not measured quantities.
-10. **Structural segmentation.** Laplacian segmentation for intro, breakdown, drop,
-    outro, surfaced as mix-in and mix-out cue points. This is the feature that turns
-    Harmonia from "shows you the key" into "tells you where to mix."
+8. **Recalibrate energy and danceability against the measured ranges in
+   `eval/baseline.md`.** Rebuild as a documented composite: EBU R128 integrated loudness
+   via `pyloudnorm`, spectral flux, onset rate, pulse clarity, low-band energy ratio, with
+   the constants fit to the measured distributions rather than the current ad-hoc `-3` /
+   `divide-by-6`. Publish the formula in the README and state plainly that these are
+   heuristics with no ground truth, not measured quantities.
+9. **Structural segmentation.** Laplacian segmentation for intro, breakdown, drop,
+   outro, surfaced as mix-in and mix-out cue points. This is the feature that turns
+   Harmonia from "shows you the key" into "tells you where to mix."
 
 **Done when:** `eval/results.md` has a per-step accuracy table from baseline to final.
 
