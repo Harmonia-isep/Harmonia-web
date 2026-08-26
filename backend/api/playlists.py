@@ -131,8 +131,7 @@ def delete_playlist(playlist_id: int, db: Session = Depends(get_db)):
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
 
-    # remove all the track links first
-    db.query(PlaylistTrack).filter(PlaylistTrack.playlist_id == playlist_id).delete()
+    # Playlist entries are removed by the database via ON DELETE CASCADE.
     db.delete(playlist)
     db.commit()
 

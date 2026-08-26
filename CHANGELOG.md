@@ -18,6 +18,11 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   by migrations; `env.py` resolves `DATABASE_URL` through the same path as `create_app`.
   Tests run the migration chain instead of `create_all`, and CI asserts the chain is
   complete (`alembic upgrade head` then `alembic check`).
+- Chunk 3: added real `ON DELETE CASCADE` to every foreign key with `passive_deletes` on
+  the parent relationships, so the database performs cascades; removed the hand-rolled
+  child-deletion loops from `delete_track` and `delete_playlist`. Dropped the redundant
+  `index=True` from the primary-key `id` columns (it duplicated the implicit PK index).
+  Added a test proving the cascade fires at the database level.
 
 ### Phase 1: dependency and packaging hygiene
 - Removed the unused crypto pins (bcrypt, passlib, python-jose, ecdsa, rsa).

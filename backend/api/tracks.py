@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from backend.audio.artwork import extract_artwork
 from backend.models.database import get_db
-from backend.models.models import Analysis, PlaylistTrack, Track, User
+from backend.models.models import Analysis, Track, User
 
 router = APIRouter()
 
@@ -70,7 +70,6 @@ def get_user_tracks(
     bpm_max: float | None = None,
     db: Session = Depends(get_db)
 ):
-    from backend.models.models import Analysis
     query = db.query(Track).filter(Track.user_id == user_id)
 
     if search:
@@ -113,9 +112,8 @@ def delete_track(track_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Track not found")
     if os.path.exists(track.file_path):
         os.remove(track.file_path)
-    # remove dependent rows first so Postgres FK constraints (NO ACTION) hold.
-    db.query(PlaylistTrack).filter(PlaylistTrack.track_id == track_id).delete()
-    db.query(Analysis).filter(Analysis.track_id == track_id).delete()
+    # Children (analysis rows, playlist entries) are removed by the database via
+    # ON DELETE CASCADE, so no manual cleanup is needed here.
     db.delete(track)
     db.commit()
     return {"message": "Track deleted"}
@@ -128,7 +126,6 @@ def export_tracks_csv(user_id: int, db: Session = Depends(get_db)):
 
     from fastapi.responses import StreamingResponse
 
-    from backend.models.models import Analysis
 
     # grab all the user's tracks
     tracks = db.query(Track).filter(Track.user_id == user_id).all()

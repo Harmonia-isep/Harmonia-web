@@ -28,3 +28,41 @@ def test_app_builds_and_serves_without_env():
     with TestClient(app) as client:
         assert client.get("/").status_code == 200
         assert client.get("/docs").status_code == 200
+
+
+def test_deleting_track_cascades_to_children_at_db_level(db):
+    from backend.models.models import Analysis, Playlist, PlaylistTrack, Track, User
+
+    user = User(username="cascade_user", password_hash="x")
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    track = Track(title="Cascade", file_path="uploads/cascade.mp3", user_id=user.id)
+    db.add(track)
+    db.commit()
+    db.refresh(track)
+
+    analysis = Analysis(track_id=track.id, bpm=120, key="A", scale="minor")
+    playlist = Playlist(name="Cascade PL", user_id=user.id, share_token="cascadetok")
+    db.add_all([analysis, playlist])
+    db.commit()
+    db.refresh(analysis)
+    db.refresh(playlist)
+    entry = PlaylistTrack(playlist_id=playlist.id, track_id=track.id, position=0)
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    analysis_id, entry_id = analysis.id, entry.id
+
+    # Delete only the track through the ORM, with no manual child cleanup. The
+    # database's ON DELETE CASCADE must remove the analysis row and the playlist
+    # entry. This fails (leftover rows, or an IntegrityError) if ondelete is
+    # dropped, which the old manual-loop tests could not detect. Assert by primary
+    # key so orphaned-but-nulled children would also fail it.
+    db.delete(track)
+    db.commit()
+
+    db.expire_all()
+    assert db.query(Analysis).filter(Analysis.id == analysis_id).first() is None
+    assert db.query(PlaylistTrack).filter(PlaylistTrack.id == entry_id).first() is None

@@ -46,21 +46,10 @@ Clone the repo:
     git clone https://github.com/Harmonia-isep/Harmonia-web.git
     cd Harmonia-web
 
-Install Python dependencies:
+Install, create the database schema, and start the server. The database defaults to
+a local SQLite file; set `DATABASE_URL` to a Postgres URL to use Postgres instead.
 
-    pip3 install fastapi uvicorn sqlalchemy psycopg2-binary python-multipart librosa numpy scipy python-dotenv --break-system-packages
-
-Create the database:
-
-    sudo -u postgres psql -c "CREATE USER harmonia_user WITH PASSWORD 'harmonia123';"
-    sudo -u postgres psql -c "CREATE DATABASE harmonia_db OWNER harmonia_user;"
-
-Create .env file:
-
-    echo "DATABASE_URL=postgresql://harmonia_user:harmonia123@localhost/harmonia_db" > .env
-
-Apply the database migrations, then start the server:
-
+    pip install -e .
     alembic upgrade head
     python3 -m uvicorn --factory backend.main:create_app --reload --host 0.0.0.0 --port 8000
 
