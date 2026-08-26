@@ -13,8 +13,10 @@ import threading
 
 import pytest
 
-# Both tests drive a real browser, so exclude them from the default CI run with
+# This drives a real browser, so it is excluded from the default CI run with
 # -m "not e2e" (CI has no browser). Run locally with the e2e extra installed.
+# The login e2e was removed with auth in Phase 3; a no-auth "app opens straight to
+# the library" flow awaits the frontend rewrite (Phase 7).
 pytestmark = pytest.mark.e2e
 
 PORT = 8099
@@ -100,20 +102,3 @@ def test_landing_page_loads_and_shows_guest_entry(server, page):
     guest_btn = page.locator("button.hero-btn-primary")
     guest_btn.wait_for(state="visible", timeout=15000)
     assert "Try it free" in guest_btn.inner_text()
-
-
-def test_login_then_view_library(server, page):
-    import httpx
-    # Seed a user through the same API (and origin) the browser will call.
-    httpx.post(f"{server}/api/users/register",
-               json={"username": "e2e_user", "password": "e2e_pw"}, timeout=10)
-
-    page.goto(server, wait_until="networkidle")
-    page.locator("button.nav-login").click()          # opens the Auth modal
-    page.get_by_placeholder("Username").fill("e2e_user")
-    page.get_by_placeholder("Password").fill("e2e_pw")
-    page.locator("button.submit").click()             # submit login
-
-    # After a successful login the app switches to the Library view.
-    page.get_by_placeholder("Search by title or artist...").wait_for(timeout=15000)
-    assert "Your Library" in page.content()

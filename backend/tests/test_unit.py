@@ -1,14 +1,11 @@
 # Unit tests: pure logic, no database, no network.
 # Covers the Camelot wheel mapping, the three harmonic-compatibility rules,
-# the password hashing, and the DSP descriptor math on a cheap synthetic tone.
-
-import hashlib
+# and the DSP descriptor math on a cheap synthetic tone.
 
 import librosa
 import numpy as np
 
 from backend.api.analysis import camelot_compatible, to_camelot
-from backend.api.users import hash_password
 from backend.audio.analyzer import analyze_audio
 
 
@@ -54,17 +51,6 @@ class TestCamelotCompatibility:
     def test_missing_code_is_incompatible(self):
         assert camelot_compatible("8A", None) is False
         assert camelot_compatible(None, None) is False
-
-
-class TestPasswordHashing:
-    def test_is_deterministic(self):
-        assert hash_password("secret") == hash_password("secret")
-
-    def test_matches_sha256(self):
-        assert hash_password("secret") == hashlib.sha256(b"secret").hexdigest()
-
-    def test_different_passwords_differ(self):
-        assert hash_password("alpha") != hash_password("beta")
 
 
 def _reproduce_descriptors(path):

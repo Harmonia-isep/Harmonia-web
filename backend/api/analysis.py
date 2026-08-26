@@ -1,6 +1,7 @@
 import os
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.audio.analyzer import analyze_audio
@@ -199,33 +200,28 @@ def camelot_compatible(code_a: str, code_b: str) -> bool:
 # recommend tracks from the library that mix well with a given track
 @router.get("/{track_id}/recommendations")
 def get_recommendations(track_id: int, db: Session = Depends(get_db)):
-    # the track we want matches for
     source = db.query(Analysis).filter(Analysis.track_id == track_id).first()
     if not source:
         raise HTTPException(status_code=404, detail="No analysis for this track")
 
-    source_track = db.query(Track).filter(Track.id == track_id).first()
     source_code = to_camelot(source.key, source.scale)
+    source_bpm = source.bpm or 0
 
-    # look at every other analyzed track belonging to the same user
-    others = db.query(Analysis).filter(Analysis.track_id != track_id).all()
+    # One query: every other analyzed track joined to its Track row, with the +/- 5
+    # BPM beatmatch window applied in SQL. Camelot compatibility stays in Python (a
+    # fixed 24-node graph, not worth pushing into SQL).
+    rows = (
+        db.query(Analysis, Track)
+        .join(Track, Track.id == Analysis.track_id)
+        .filter(Analysis.track_id != track_id)
+        .filter(func.abs(func.coalesce(Analysis.bpm, 0) - source_bpm) <= 5)
+        .all()
+    )
 
     recommendations = []
-    for other in others:
-        other_track = db.query(Track).filter(Track.id == other.track_id).first()
-        # only recommend tracks owned by the same user
-        if not other_track or other_track.user_id != source_track.user_id:
-            continue
-
-        # BPM must be within +/- 5 BPM to beatmatch comfortably
-        bpm_close = abs((other.bpm or 0) - (source.bpm or 0)) <= 5
-
-        # keys must be harmonically compatible on the Camelot wheel
+    for other, other_track in rows:
         other_code = to_camelot(other.key, other.scale)
-        key_ok = camelot_compatible(source_code, other_code)
-
-        # a track is recommended only if BOTH conditions hold
-        if bpm_close and key_ok:
+        if camelot_compatible(source_code, other_code):
             recommendations.append({
                 "track_id": other_track.id,
                 "title": other_track.title,

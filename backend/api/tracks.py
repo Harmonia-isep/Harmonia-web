@@ -8,11 +8,12 @@ from sqlalchemy.orm import Session
 
 from backend.audio.artwork import extract_artwork
 from backend.models.database import get_db
-from backend.models.models import Analysis, Track, User
+from backend.models.models import Analysis, Track
 
 router = APIRouter()
 
 UPLOAD_DIR = "uploads"
+
 
 @router.post("/upload")
 def upload_track(
@@ -20,13 +21,8 @@ def upload_track(
     title: str = Form(...),
     artist: str = Form(None),
     album: str = Form(None),
-    user_id: int = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     ext = os.path.splitext(file.filename)[1]
     filename = f"{uuid.uuid4()}{ext}"
     file_path = os.path.join(UPLOAD_DIR, filename)
@@ -34,15 +30,14 @@ def upload_track(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # guard against oversized files. The free-tier server has limited RAM,
-    # and analysing a very large file can exceed it. A normal song is well
-    # under 20 MB, so reject anything bigger with a clear message.
+    # guard against oversized files. A normal song is well under 20 MB, so reject
+    # anything bigger with a clear message.
     max_size = 20 * 1024 * 1024  # 20 MB
     if os.path.getsize(file_path) > max_size:
         os.remove(file_path)
         raise HTTPException(
             status_code=413,
-            detail="File too large. Please upload a track under 20 MB (a normal-length song)."
+            detail="File too large. Please upload a track under 20 MB (a normal-length song).",
         )
 
     # try to pull album art out of the file's metadata
@@ -54,23 +49,22 @@ def upload_track(
         album=album,
         file_path=file_path,
         artwork_path=artwork_path,
-        user_id=user_id
     )
     db.add(track)
     db.commit()
     db.refresh(track)
     return {"id": track.id, "title": track.title, "file_path": track.file_path}
 
-@router.get("/user/{user_id}")
-def get_user_tracks(
-    user_id: int,
+
+@router.get("/")
+def list_tracks(
     search: str | None = None,
     key: str | None = None,
     bpm_min: float | None = None,
     bpm_max: float | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    query = db.query(Track).filter(Track.user_id == user_id)
+    query = db.query(Track)
 
     if search:
         query = query.filter(
@@ -87,7 +81,43 @@ def get_user_tracks(
             query = query.filter(Analysis.bpm <= bpm_max)
 
     tracks = query.all()
-    return [{"id": t.id, "title": t.title, "artist": t.artist, "album": t.album, "uploaded_at": t.uploaded_at} for t in tracks]
+    return [
+        {"id": t.id, "title": t.title, "artist": t.artist, "album": t.album, "uploaded_at": t.uploaded_at}
+        for t in tracks
+    ]
+
+
+# US18 - Export all tracks + analysis as a CSV file. Declared before the
+# /{track_id} route so the literal "export" path is not captured by it.
+@router.get("/export")
+def export_tracks_csv(db: Session = Depends(get_db)):
+    import csv
+    import io
+
+    from fastapi.responses import StreamingResponse
+
+    tracks = db.query(Track).all()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Title", "Artist", "Album", "BPM", "Key", "Scale", "Energy", "Danceability"])
+
+    for track in tracks:
+        a = db.query(Analysis).filter(Analysis.track_id == track.id).first()
+        row = [track.title, track.artist or "", track.album or ""]
+        if a:
+            row += [a.bpm, a.key, a.scale, a.energy, a.danceability]
+        else:
+            row += ["", "", "", "", ""]
+        writer.writerow(row)
+
+    buffer.seek(0)
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=harmonia_export.csv"},
+    )
+
 
 @router.get("/{track_id}")
 def get_track(track_id: int, db: Session = Depends(get_db)):
@@ -95,6 +125,7 @@ def get_track(track_id: int, db: Session = Depends(get_db)):
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
     return {"id": track.id, "title": track.title, "artist": track.artist, "analysis": track.analysis}
+
 
 @router.get("/{track_id}/audio")
 def get_track_audio(track_id: int, db: Session = Depends(get_db)):
@@ -104,6 +135,7 @@ def get_track_audio(track_id: int, db: Session = Depends(get_db)):
     if not os.path.exists(track.file_path):
         raise HTTPException(status_code=404, detail="Audio file not found")
     return FileResponse(track.file_path, media_type="audio/mpeg")
+
 
 @router.delete("/{track_id}")
 def delete_track(track_id: int, db: Session = Depends(get_db)):
@@ -118,51 +150,6 @@ def delete_track(track_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Track deleted"}
 
-# US18 - Export all tracks + analysis as a CSV file the user can download
-@router.get("/user/{user_id}/export")
-def export_tracks_csv(user_id: int, db: Session = Depends(get_db)):
-    import csv
-    import io
-
-    from fastapi.responses import StreamingResponse
-
-
-    # grab all the user's tracks
-    tracks = db.query(Track).filter(Track.user_id == user_id).all()
-
-    # write everything into a CSV in memory
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-
-    # header row
-    writer.writerow(["Title", "Artist", "Album", "BPM", "Key", "Scale", "Energy", "Danceability"])
-
-    # one row per track, pull analysis if it exists
-    for track in tracks:
-        a = db.query(Analysis).filter(Analysis.track_id == track.id).first()
-
-        row = [
-            track.title,
-            track.artist or "",
-            track.album or "",
-        ]
-
-        # if the track has been analyzed, add those columns too
-        if a:
-            row += [a.bpm, a.key, a.scale, a.energy, a.danceability]
-        else:
-            row += ["", "", "", "", ""]
-
-        writer.writerow(row)
-
-    buffer.seek(0)
-
-    # send it back as a downloadable file
-    return StreamingResponse(
-        iter([buffer.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=harmonia_export.csv"}
-    )
 
 # serve a track's album art image
 @router.get("/{track_id}/artwork")

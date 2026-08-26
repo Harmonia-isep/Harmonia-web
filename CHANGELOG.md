@@ -6,6 +6,16 @@ academic submission is preserved under the `v0.1.0-academic` tag.
 
 ## Unreleased
 
+### Phase 3: delete auth
+- Removed authentication entirely (local-first, single-user). Dropped the `User` model and
+  the `user_id` foreign keys from `Track` and `Playlist` (one migration), deleted
+  `backend/api/users.py` and its router, and removed the `user_id` form/path params from
+  the tracks and playlists endpoints.
+- Rewrote `get_recommendations` as a single `Analysis`-to-`Track` join with the BPM window
+  applied in SQL (Camelot compatibility stays in Python), killing the N+1: the endpoint's
+  query count dropped from O(N) to 2 regardless of library size.
+- The server binds `127.0.0.1` by default; the README documents the no-auth decision.
+
 ### Phase 2: de-cloud (in progress)
 - Chunk 1: added a `create_app()` factory and moved all configuration to call time. There
   is no module-level engine, session factory, or app instance. `DATABASE_URL` now defaults

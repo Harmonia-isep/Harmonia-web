@@ -63,11 +63,20 @@ Then open http://127.0.0.1:8000.
 separately. CORS is enabled for the dev-server origin (`localhost:3000`) as a dev-only
 convenience:
 
-    python3 -m uvicorn --factory backend.main:create_app --reload --port 8000
+    python3 -m uvicorn --factory backend.main:create_app --reload --host 127.0.0.1 --port 8000
     # in another terminal:
     cd frontend && npm install && npm start
 
+Both commands bind `127.0.0.1` (loopback), so the server is not exposed on your network.
 If the frontend build is absent, the backend logs a warning and serves the API only.
+
+### No accounts (local-first)
+
+Harmonia is a local-first, single-user tool, so it has no authentication: no login, no
+user accounts, no per-user data. On `127.0.0.1` an auth layer would be security theatre,
+and removing it deletes the `User` model, ownership filtering, and a whole class of state.
+This is a deliberate design decision, not a missing feature. To expose the server on a
+LAN, put it behind your own reverse proxy and access control.
 
 ## DSP Analysis Pipeline
 

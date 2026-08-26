@@ -16,14 +16,6 @@ NAMING_CONVENTION = {
 
 Base = declarative_base(metadata=MetaData(naming_convention=NAMING_CONVENTION))
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    tracks = relationship("Track", back_populates="owner", passive_deletes=True)
-
 class Track(Base):
     __tablename__ = "tracks"
     id = Column(Integer, primary_key=True)
@@ -34,8 +26,6 @@ class Track(Base):
     artwork_path = Column(String)  # path to extracted album art, if the file had any
     duration = Column(Float)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    owner = relationship("User", back_populates="tracks")
     analysis = relationship("Analysis", back_populates="track", uselist=False, passive_deletes=True)
 
 class Analysis(Base):
@@ -50,17 +40,15 @@ class Analysis(Base):
     analyzed_at = Column(DateTime, default=datetime.utcnow)
     track = relationship("Track", back_populates="analysis")
 
-# playlist that belongs to a user
+# a playlist and its ordered tracks
 class Playlist(Base):
     __tablename__ = "playlists"
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     share_token = Column(String, unique=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    owner = relationship("User")
     tracks = relationship("PlaylistTrack", back_populates="playlist", passive_deletes=True)
 
 # links playlists to tracks, with ordering

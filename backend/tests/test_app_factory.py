@@ -48,20 +48,15 @@ def test_frontend_served_and_catch_all_scoped(tmp_path):
 
 
 def test_deleting_track_cascades_to_children_at_db_level(db):
-    from backend.models.models import Analysis, Playlist, PlaylistTrack, Track, User
+    from backend.models.models import Analysis, Playlist, PlaylistTrack, Track
 
-    user = User(username="cascade_user", password_hash="x")
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    track = Track(title="Cascade", file_path="uploads/cascade.mp3", user_id=user.id)
+    track = Track(title="Cascade", file_path="uploads/cascade.mp3")
     db.add(track)
     db.commit()
     db.refresh(track)
 
     analysis = Analysis(track_id=track.id, bpm=120, key="A", scale="minor")
-    playlist = Playlist(name="Cascade PL", user_id=user.id, share_token="cascadetok")
+    playlist = Playlist(name="Cascade PL", share_token="cascadetok")
     db.add_all([analysis, playlist])
     db.commit()
     db.refresh(analysis)

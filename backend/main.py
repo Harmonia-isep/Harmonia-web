@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.engine import Engine
 
-from backend.api import analysis, playlists, tracks, users
+from backend.api import analysis, playlists, tracks
 from backend.models.database import create_database_engine, create_session_factory
 
 logger = logging.getLogger("harmonia")
@@ -68,7 +68,6 @@ def create_app(
         allow_headers=["*"],
     )
 
-    app.include_router(users.router, prefix="/api/users", tags=["users"])
     app.include_router(tracks.router, prefix="/api/tracks", tags=["tracks"])
     app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
     app.include_router(playlists.router, prefix="/api/playlists", tags=["playlists"])

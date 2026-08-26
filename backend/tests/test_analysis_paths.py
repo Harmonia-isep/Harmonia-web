@@ -7,7 +7,7 @@ import soundfile as sf
 
 from backend.api.analysis import run_analysis
 from backend.audio.analyzer import KEYS
-from backend.models.models import Analysis, Track, User
+from backend.models.models import Analysis, Track
 from conftest import TestingSessionLocal
 
 
@@ -18,12 +18,8 @@ def _write_tone(path, freq=220.0, sr=22050, dur=4.0):
     sf.write(str(path), y.astype(np.float32), sr)
 
 
-def _make_user_and_track(db, file_path, username):
-    user = User(username=username, password_hash="x")
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    track = Track(title="Real Song", file_path=str(file_path), user_id=user.id)
+def _make_track(db, file_path):
+    track = Track(title="Real Song", file_path=str(file_path))
     db.add(track)
     db.commit()
     db.refresh(track)
@@ -33,10 +29,10 @@ def _make_user_and_track(db, file_path, username):
 def test_run_analysis_writes_bounded_descriptors(db, tmp_path):
     wav = tmp_path / "song.wav"
     _write_tone(wav)
-    track = _make_user_and_track(db, wav, "run_analysis_user")
+    track = _make_track(db, wav)
 
     # Hand run_analysis the test session factory so the Track and the Analysis
-    # it writes live in the same in-memory database.
+    # it writes live in the same database.
     run_analysis(track.id, str(wav), TestingSessionLocal)  # real DSP over the audio
 
     verify = TestingSessionLocal()
@@ -55,7 +51,7 @@ def test_run_analysis_updates_existing_row(db, tmp_path):
     # not create a duplicate (covers run_analysis' "existing" branch).
     wav = tmp_path / "song2.wav"
     _write_tone(wav, freq=330.0)
-    track = _make_user_and_track(db, wav, "run_analysis_update_user")
+    track = _make_track(db, wav)
 
     run_analysis(track.id, str(wav), TestingSessionLocal)
     run_analysis(track.id, str(wav), TestingSessionLocal)
@@ -69,7 +65,7 @@ def test_run_analysis_updates_existing_row(db, tmp_path):
 def test_spectrum_endpoint_returns_bands(client, db, tmp_path):
     wav = tmp_path / "spectrum.wav"
     _write_tone(wav, freq=440.0)
-    track = _make_user_and_track(db, wav, "spectrum_user")
+    track = _make_track(db, wav)
 
     r = client.get(f"/api/analysis/{track.id}/spectrum")
     assert r.status_code == 200
@@ -88,7 +84,7 @@ def test_analyze_track_404_when_track_missing(client):
 
 def test_analyze_track_404_when_file_missing(client, db):
     # Track row exists but points at a file that isn't on disk.
-    track = _make_user_and_track(db, "uploads/does_not_exist.mp3", "missing_file_user")
+    track = _make_track(db, "uploads/does_not_exist.mp3")
     r = client.post(f"/api/analysis/analyze/{track.id}")
     assert r.status_code == 404
     assert r.json()["detail"] == "Audio file not found"
