@@ -5,7 +5,6 @@
 import numpy as np
 import soundfile as sf
 
-import backend.models.database as database_module
 from backend.api.analysis import run_analysis
 from backend.audio.analyzer import KEYS
 from backend.models.models import Analysis, Track, User
@@ -31,16 +30,14 @@ def _make_user_and_track(db, file_path, username):
     return track
 
 
-def test_run_analysis_writes_bounded_descriptors(db, tmp_path, monkeypatch):
+def test_run_analysis_writes_bounded_descriptors(db, tmp_path):
     wav = tmp_path / "song.wav"
     _write_tone(wav)
     track = _make_user_and_track(db, wav, "run_analysis_user")
 
-    # run_analysis opens its own SessionLocal; point it at the test DB so the
-    # Track and the Analysis it writes live in the same database.
-    monkeypatch.setattr(database_module, "SessionLocal", TestingSessionLocal)
-
-    run_analysis(track.id, str(wav))  # real DSP over the generated audio
+    # Hand run_analysis the test session factory so the Track and the Analysis
+    # it writes live in the same in-memory database.
+    run_analysis(track.id, str(wav), TestingSessionLocal)  # real DSP over the audio
 
     verify = TestingSessionLocal()
     written = verify.query(Analysis).filter(Analysis.track_id == track.id).first()
@@ -53,16 +50,15 @@ def test_run_analysis_writes_bounded_descriptors(db, tmp_path, monkeypatch):
     verify.close()
 
 
-def test_run_analysis_updates_existing_row(db, tmp_path, monkeypatch):
+def test_run_analysis_updates_existing_row(db, tmp_path):
     # A second run over the same track must update the existing Analysis,
     # not create a duplicate (covers run_analysis' "existing" branch).
     wav = tmp_path / "song2.wav"
     _write_tone(wav, freq=330.0)
     track = _make_user_and_track(db, wav, "run_analysis_update_user")
 
-    monkeypatch.setattr(database_module, "SessionLocal", TestingSessionLocal)
-    run_analysis(track.id, str(wav))
-    run_analysis(track.id, str(wav))
+    run_analysis(track.id, str(wav), TestingSessionLocal)
+    run_analysis(track.id, str(wav), TestingSessionLocal)
 
     verify = TestingSessionLocal()
     rows = verify.query(Analysis).filter(Analysis.track_id == track.id).all()

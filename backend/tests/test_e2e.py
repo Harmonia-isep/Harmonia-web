@@ -2,9 +2,9 @@
 # React UI against a real backend.
 #
 # The session fixture stands up two servers once:
-#   * uvicorn serving backend.main.app on API_PORT. It reuses the SQLite test
-#     database wired up in conftest.py (get_db is overridden there), so no
-#     Postgres is needed and the browser and the test see the same rows.
+#   * uvicorn serving the app built in conftest.py on API_PORT. That app uses
+#     the in-memory SQLite test database, so no Postgres is needed and the
+#     browser and the test see the same rows.
 #   * a threaded http.server serving the static React build (frontend/build)
 #     on WEB_PORT.
 #
@@ -75,7 +75,7 @@ def servers():
     web_thread.start()
 
     # Backend via uvicorn, in-process, sharing conftest's SQLite test DB.
-    from backend.main import app
+    from conftest import app
     config = uvicorn.Config(app, host="127.0.0.1", port=API_PORT, log_level="warning")
     server = uvicorn.Server(config)
     server.install_signal_handlers = lambda: None  # required off the main thread

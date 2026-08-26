@@ -1,6 +1,6 @@
 import os
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from backend.audio.analyzer import analyze_audio
@@ -10,22 +10,20 @@ from backend.models.models import Analysis, Track
 router = APIRouter()
 
 @router.post("/analyze/{track_id}")
-def analyze_track(track_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def analyze_track(track_id: int, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     track = db.query(Track).filter(Track.id == track_id).first()
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
     if not os.path.exists(track.file_path):
         raise HTTPException(status_code=404, detail="Audio file not found")
-    background_tasks.add_task(run_analysis, track_id, track.file_path)
+    background_tasks.add_task(run_analysis, track_id, track.file_path, request.app.state.sessionmaker)
     return {"message": "Analysis started", "track_id": track_id}
 
-def run_analysis(track_id: int, file_path: str):
-    # This runs as a background task AFTER the request has returned, so it
-    # must open its own database session - the request's session is already
-    # closed by then. pool_pre_ping (set on the engine) ensures this session
-    # gets a live connection even if Neon dropped an idle one.
-    from backend.models.database import SessionLocal
-    db = SessionLocal()
+def run_analysis(track_id: int, file_path: str, session_factory):
+    # Runs as a background task after the response is sent, outside any request,
+    # so it is handed the app's session factory explicitly rather than reaching
+    # for module-level state.
+    db = session_factory()
     try:
         result = analyze_audio(file_path)
         existing = db.query(Analysis).filter(Analysis.track_id == track_id).first()

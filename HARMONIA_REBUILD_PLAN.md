@@ -210,18 +210,19 @@ this factory.
    silently skips FK enforcement, which is exactly why the hand-rolled cascade deletes
    have been passing tests (audit finding 10).
 3. Introduce Alembic. `alembic init`, configure it to read `DATABASE_URL`, generate one
-   baseline migration matching the current schema, and remove
-   `Base.metadata.create_all` from `main.py:8`.
+   baseline migration matching the current schema, and remove `Base.metadata.create_all`
+   from app startup. Note: the migration chain built across Phases 2 and 3 gets squashed
+   into a single initial migration before the public release, so the published history
+   starts from one clean baseline.
 4. Add real `ondelete="CASCADE"` to every FK in a follow-up migration, then delete the
    manual child-deletion loops in `delete_track` and `delete_playlist`.
 5. Serve the frontend: build React, mount the output with `StaticFiles` in `main.py`
    with an SPA catch-all so client-side routes resolve. One process, one port.
 6. Rewrite `docker-compose.yml` properly, or ship a Dockerfile only. Do not bundle FFmpeg.
-7. Replace upload-only ingestion with **local folder scanning**: a configurable music
-   directory, scanned in place with `mutagen` for tags, no file copying. Keep the upload
-   endpoint if it is cheap to keep, but scanning becomes the primary path.
-8. Add a `content_hash` column to `Track` (blake2b over file size plus first and last
-   1MB is enough and is fast). This becomes the cache and Parquet key.
+
+Local folder scanning and the `content_hash` column (formerly steps 7 and 8) have moved
+to run **after Phase 3** (see "Phase 3.5: local ingestion" below), so ingestion is built
+against the already auth-free models instead of being reworked twice.
 
 **Done when:** the app runs offline on a fresh machine with no `DATABASE_URL` set.
 
@@ -258,6 +259,21 @@ this factory.
    omission.
 
 **Done when:** no reference to `User` remains, the suite passes, coverage is re-measured.
+
+---
+
+### Phase 3.5: local ingestion (moved out of Phase 2)
+
+**Goal:** ingest music from a local folder, keyed by content hash. Runs after auth is gone
+so it targets the final, user-free models rather than being reworked twice.
+
+1. Replace upload-only ingestion with **local folder scanning**: a configurable music
+   directory, scanned in place with `mutagen` for tags, no file copying. Keep the upload
+   endpoint if it is cheap to keep, but scanning becomes the primary path.
+2. Add a `content_hash` column to `Track` (blake2b over file size plus first and last
+   1MB is enough and is fast). This becomes the cache and Parquet key.
+
+**Done when:** pointing the app at a folder populates the library with hashed tracks.
 
 ---
 

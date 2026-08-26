@@ -1,44 +1,36 @@
 # Shared pytest fixtures for the Harmonia backend test suite.
 #
-# The backend normally talks to PostgreSQL (Neon). For tests we point it at an
-# in-memory SQLite database instead: the models use only generic SQLAlchemy
-# column types, so they map cleanly onto SQLite. A single shared connection
-# (StaticPool) means the FastAPI TestClient's worker thread sees the same rows
-# the fixtures insert.
-
-import os
-
-# Must be set before any backend module is imported, because
-# backend/models/database.py reads DATABASE_URL at import time.
-os.environ.setdefault("DATABASE_URL", "sqlite://")
-
-# The CORS middleware reads CORS_ORIGINS when backend.main is imported (below),
-# so it must be set before that import - a fixture would run too late. Include
-# the e2e browser origin: test_e2e.py serves the built frontend on
-# 127.0.0.1:8098, and the headless browser's cross-origin API calls need it.
-os.environ.setdefault(
-    "CORS_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000,http://127.0.0.1:8098",
-)
+# The app is built by create_app() against an in-memory SQLite database. A single
+# shared connection (StaticPool) means the FastAPI TestClient's worker thread sees
+# the same rows the fixtures insert. All configuration is passed to the factory
+# explicitly, so no environment variables need to be set before import.
 
 import numpy as np
 import pytest
 import soundfile as sf
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from backend.main import app
-from backend.models.database import get_db
+from backend.main import create_app
+from backend.models.database import create_database_engine, create_session_factory
 from backend.models.models import Base
 
-# One in-memory SQLite engine shared across the whole test session.
-test_engine = create_engine(
-    "sqlite://",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+# One in-memory SQLite engine shared across the whole test session. Built through
+# the same factory helper as production, so it gets the foreign-key PRAGMA too.
+test_engine = create_database_engine("sqlite://", poolclass=StaticPool)
+TestingSessionLocal = create_session_factory(test_engine)
+
+# The app reads its config from these explicit arguments. The CORS list includes
+# the e2e browser origin (test_e2e.py serves the built frontend on
+# 127.0.0.1:8098), which replaces the old CORS_ORIGINS env-var workaround.
+app = create_app(
+    engine=test_engine,
+    create_tables=False,
+    cors_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8098",
+    ],
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -46,18 +38,6 @@ def _create_schema():
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
-
-
-def _override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# Route every request's DB dependency to the test database.
-app.dependency_overrides[get_db] = _override_get_db
 
 
 @pytest.fixture
@@ -82,7 +62,7 @@ def make_tone(tmp_path):
     """Factory that writes a short musical tone to a WAV file and returns its path.
 
     A fundamental plus two harmonics makes the chroma (and therefore the
-    detected key) robust, while staying tiny — no large audio fixtures needed.
+    detected key) robust, while staying tiny, so no large audio fixtures needed.
     """
     def _make(freq=440.0, sr=22050, dur=5.0):
         t = np.linspace(0, dur, int(sr * dur), endpoint=False)
