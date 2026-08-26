@@ -41,7 +41,7 @@ def test_run_analysis_writes_bounded_descriptors(db, tmp_path, monkeypatch):
     # Track and the Analysis it writes live in the same database.
     monkeypatch.setattr(database_module, "SessionLocal", TestingSessionLocal)
 
-    run_analysis(track.id, str(wav), None)  # real DSP over the generated audio
+    run_analysis(track.id, str(wav))  # real DSP over the generated audio
 
     verify = TestingSessionLocal()
     written = verify.query(Analysis).filter(Analysis.track_id == track.id).first()
@@ -62,8 +62,8 @@ def test_run_analysis_updates_existing_row(db, tmp_path, monkeypatch):
     track = _make_user_and_track(db, wav, "run_analysis_update_user")
 
     monkeypatch.setattr(database_module, "SessionLocal", TestingSessionLocal)
-    run_analysis(track.id, str(wav), None)
-    run_analysis(track.id, str(wav), None)
+    run_analysis(track.id, str(wav))
+    run_analysis(track.id, str(wav))
 
     verify = TestingSessionLocal()
     rows = verify.query(Analysis).filter(Analysis.track_id == track.id).all()
