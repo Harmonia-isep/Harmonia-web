@@ -7,7 +7,6 @@ from sqlalchemy.engine import Engine
 
 from backend.api import analysis, playlists, tracks, users
 from backend.models.database import create_database_engine, create_session_factory
-from backend.models.models import Base
 
 DEFAULT_CORS_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000"
 
@@ -21,14 +20,15 @@ def create_app(
     database_url: str | None = None,
     *,
     engine: Engine | None = None,
-    create_tables: bool = True,
     cors_origins: list[str] | None = None,
 ) -> FastAPI:
     """Build the Harmonia FastAPI application.
 
     All configuration (database URL, CORS origins) is read here, at call time,
     not at import time, so a fresh clone with no .env can still import and run.
-    Pass ``engine`` to reuse a prepared engine (the test suite does this).
+    The database schema is owned by Alembic (run ``alembic upgrade head``); the
+    app no longer creates tables at startup. Pass ``engine`` to reuse a prepared
+    engine (the test suite does this).
     """
     load_dotenv()  # load a local .env if present; a no-op on a fresh clone
 
@@ -36,8 +36,6 @@ def create_app(
         engine = create_database_engine(database_url)
     session_factory = create_session_factory(engine)
 
-    if create_tables:
-        Base.metadata.create_all(bind=engine)
     os.makedirs("uploads", exist_ok=True)
 
     app = FastAPI(title="Harmonia API", version="1.0.0")

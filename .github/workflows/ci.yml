@@ -27,6 +27,15 @@ jobs:
           pip install -r requirements.lock
           pip install -e . --no-deps
 
+      # Assert the migration chain is complete: upgrade a fresh SQLite file to head,
+      # then `alembic check` fails if any model change lacks a matching migration.
+      - name: Migrations (fresh DB, no drift)
+        env:
+          DATABASE_URL: "sqlite:///./ci_migrations.db"
+        run: |
+          alembic upgrade head
+          alembic check
+
       - name: Ruff
         run: ruff check .
 

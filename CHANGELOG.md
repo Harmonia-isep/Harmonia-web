@@ -13,6 +13,11 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   connections turn on foreign-key enforcement via a `PRAGMA foreign_keys=ON` event
   listener (SQLite only); the background analysis task takes an explicit session factory.
   Removed the `CORS_ORIGINS` env-var workaround from the test suite.
+- Chunk 2: introduced Alembic with a single baseline migration and a constraint naming
+  convention. Removed `Base.metadata.create_all` from startup, so the schema is now owned
+  by migrations; `env.py` resolves `DATABASE_URL` through the same path as `create_app`.
+  Tests run the migration chain instead of `create_all`, and CI asserts the chain is
+  complete (`alembic upgrade head` then `alembic check`).
 
 ### Phase 1: dependency and packaging hygiene
 - Removed the unused crypto pins (bcrypt, passlib, python-jose, ecdsa, rsa).

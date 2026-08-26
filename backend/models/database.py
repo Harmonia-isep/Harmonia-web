@@ -14,6 +14,13 @@ def _is_sqlite(url: str) -> bool:
     return url.startswith("sqlite")
 
 
+def resolve_database_url(database_url: str | None = None) -> str:
+    """Resolve the database URL the one way everywhere: argument, then the
+    DATABASE_URL environment variable, then the local SQLite default. Alembic's
+    env.py uses this too, so the app and migrations share a single config path."""
+    return database_url or os.getenv("DATABASE_URL") or DEFAULT_DATABASE_URL
+
+
 def create_database_engine(database_url: str | None = None, **engine_kwargs) -> Engine:
     """Build a SQLAlchemy engine, resolving configuration at call time.
 
@@ -21,7 +28,7 @@ def create_database_engine(database_url: str | None = None, **engine_kwargs) -> 
     SQLite gets check_same_thread=False (so the request thread pool can share the
     connection) and per-connection foreign-key enforcement; Postgres gets neither.
     """
-    url = database_url or os.getenv("DATABASE_URL") or DEFAULT_DATABASE_URL
+    url = resolve_database_url(database_url)
     connect_args = {"check_same_thread": False} if _is_sqlite(url) else {}
     engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True, **engine_kwargs)
     if _is_sqlite(url):

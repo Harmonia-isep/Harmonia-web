@@ -1,30 +1,34 @@
 # Shared pytest fixtures for the Harmonia backend test suite.
 #
-# The app is built by create_app() against an in-memory SQLite database. A single
-# shared connection (StaticPool) means the FastAPI TestClient's worker thread sees
-# the same rows the fixtures insert. All configuration is passed to the factory
-# explicitly, so no environment variables need to be set before import.
+# The app is built by create_app() against a temporary SQLite file. StaticPool keeps
+# a single shared connection so the FastAPI TestClient's worker thread and the fixtures
+# see the same rows. The schema is created by running the real Alembic migration chain,
+# not Base.metadata.create_all, so a broken migration fails the suite here rather than
+# in production. All configuration flows through the one config path (DATABASE_URL).
+
+import os
+import tempfile
 
 import numpy as np
 import pytest
 import soundfile as sf
+from alembic.config import Config
 from sqlalchemy.pool import StaticPool
 
+from alembic import command
 from backend.main import create_app
 from backend.models.database import create_database_engine, create_session_factory
-from backend.models.models import Base
 
-# One in-memory SQLite engine shared across the whole test session. Built through
-# the same factory helper as production, so it gets the foreign-key PRAGMA too.
-test_engine = create_database_engine("sqlite://", poolclass=StaticPool)
+# Point both the app engine and Alembic at one temp SQLite file via DATABASE_URL.
+_db_fd, _DB_PATH = tempfile.mkstemp(suffix=".db")
+os.close(_db_fd)
+os.environ["DATABASE_URL"] = f"sqlite:///{_DB_PATH}"
+
+test_engine = create_database_engine(poolclass=StaticPool)
 TestingSessionLocal = create_session_factory(test_engine)
 
-# The app reads its config from these explicit arguments. The CORS list includes
-# the e2e browser origin (test_e2e.py serves the built frontend on
-# 127.0.0.1:8098), which replaces the old CORS_ORIGINS env-var workaround.
 app = create_app(
     engine=test_engine,
-    create_tables=False,
     cors_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -32,12 +36,17 @@ app = create_app(
     ],
 )
 
+_ALEMBIC_INI = os.path.join(os.path.dirname(__file__), "alembic.ini")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _create_schema():
-    Base.metadata.create_all(bind=test_engine)
+    # Run the real migration chain against the temp database (Alembic resolves the
+    # same DATABASE_URL through env.py), so tests exercise the schema Alembic ships.
+    command.upgrade(Config(_ALEMBIC_INI), "head")
     yield
-    Base.metadata.drop_all(bind=test_engine)
+    test_engine.dispose()
+    os.remove(_DB_PATH)
 
 
 @pytest.fixture

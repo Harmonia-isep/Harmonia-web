@@ -59,9 +59,10 @@ Create .env file:
 
     echo "DATABASE_URL=postgresql://harmonia_user:harmonia123@localhost/harmonia_db" > .env
 
-Start the server:
+Apply the database migrations, then start the server:
 
-    python3 -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+    alembic upgrade head
+    python3 -m uvicorn --factory backend.main:create_app --reload --host 0.0.0.0 --port 8000
 
 ### Frontend Setup
 
