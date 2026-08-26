@@ -1,0 +1,51 @@
+Harmonia evaluation harness - dataset credits and licensing
+===========================================================
+
+The harness downloads third-party datasets at runtime into eval/datasets/
+(gitignored). None of that data is vendored or redistributed in this
+repository. The licenses below cover only the downloaded data on your disk,
+never anything committed here. Harmonia's own code is under the repository's
+license.
+
+
+GiantSteps+ EDM Key dataset  (key evaluation)
+---------------------------------------------
+600 two-minute electronic-music excerpts with corrected key annotations.
+Source:   Zenodo record 1095691  (https://zenodo.org/record/1095691)
+License:  Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+Citation: Knees, P., Faraldo, A., Herrera, P., Vogl, R., Boeck, S.,
+          Hoerschlaeger, F., Le Goff, M. (2015). Two data sets for tempo
+          estimation and key detection in electronic dance music annotated
+          from user corrections. ISMIR 2015.
+
+Note: this is the re-annotated GiantSteps+ set (600 tracks), NOT the original
+GiantSteps key set (604 tracks). See README.md - scores are not directly
+comparable to papers that use the original 604-track set.
+
+
+GTZAN Genre Collection  (tempo evaluation - audio)
+--------------------------------------------------
+1000 thirty-second excerpts across 10 genres.
+Source:   public mirror on Hugging Face (marsyas/gtzan). The original marsyas
+          source (opihi.cs.uvic.ca) is no longer available.
+License:  no clear license is stated for the GTZAN audio. It is fetched at
+          runtime and NOT redistributed here.
+Citation: Tzanetakis, G., & Cook, P. (2002). Musical genre classification of
+          audio signals. IEEE Transactions on Speech and Audio Processing,
+          10(5), 293-302.
+
+
+GTZAN tempo annotations  (tempo evaluation - ground truth)
+----------------------------------------------------------
+One tempo value (BPM) per track.
+Source:   TempoBeatDownbeat / gtzan_tempo_beat (GitHub), as indexed by
+          mirdata's gtzan_genre loader.
+License:  no license is stated for these tempo annotations. They are fetched
+          at runtime and NOT redistributed here.
+
+
+Tooling
+-------
+Dataset download and loading use mirdata (BSD-3-Clause). Key scoring is
+cross-checked against mir_eval (MIT). Neither is vendored; both are listed in
+eval/requirements.txt.

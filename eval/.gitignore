@@ -1,0 +1,4 @@
+# Never commit downloaded datasets, audio, or generated reports.
+# The harness re-downloads everything on demand (see fetch_datasets.py).
+datasets/
+results/

@@ -6,6 +6,33 @@ academic submission is preserved under the `v0.1.0-academic` tag.
 
 ## Unreleased
 
+### Phase 4: evaluation harness and baseline
+- Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`
+  as-is (imports and calls `analyze_audio`; the analyzer is not modified). Scores
+  key with the MIREX weighting (correct 1.0, fifth 0.5, relative 0.3, parallel
+  0.2, else 0.0), reporting the weighted score, the raw exact-match rate, and a
+  fifth/relative/parallel/other confusion breakdown. The directional fifth (+7
+  only) matches `mir_eval.key.weighted_score`, cross-checked over all 576 key
+  pairs in the test suite.
+- Scores tempo with Accuracy1 (within 4%) and Accuracy2 (plus 1/3, 1/2, 2, 3
+  metrical factors), reporting how many Accuracy2 hits were octave errors.
+- Histograms energy and danceability, and audits two suspected analyzer
+  pathologies by recomputing its internal `loudness` and `punch` terms from the
+  same audio: how often `min(1.0, rms/0.3)` saturates at 1.0 and
+  `clamp((ratio-3)/6)` clamps to 0.0.
+- Datasets: GiantSteps+ EDM Key (600 tracks, Zenodo 1095691) for key; GTZAN
+  (Hugging Face mirror + TempoBeatDownbeat tempo annotations) for tempo. The key
+  set is the re-annotated 600, not the original 604, so numbers are not directly
+  comparable to papers on the 604. GTZAN replaces GiantSteps Tempo because the
+  GiantSteps key and tempo sets overlap by only 43 Beatport IDs (of 664),
+  too few to reuse the key audio for a tempo baseline.
+- Vendors nothing: `fetch_datasets.py` downloads everything at runtime into
+  `eval/datasets/` (gitignored); no audio or annotation is committed. `eval/NOTICE`
+  credits both datasets with licenses (GiantSteps+ is CC BY-SA 4.0; the GTZAN
+  audio and tempo annotations have no stated license and are fetched, not
+  redistributed). `eval/README.md` documents acquisition, scoring, and the
+  dataset-swap caveats.
+
 ### Phase 3: delete auth
 - Removed authentication entirely (local-first, single-user). Dropped the `User` model and
   the `user_id` foreign keys from `Track` and `Playlist` (one migration), deleted
