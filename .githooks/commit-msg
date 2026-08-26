@@ -1,0 +1,4 @@
+#!/bin/sh
+# Strip AI attribution trailers from commit messages. Belt-and-braces alongside
+# the attribution config in ~/.claude/settings.json.
+sed -i -E '/^Co-Authored-By:/d; /^(🤖 )?Generated with/d' "$1"
