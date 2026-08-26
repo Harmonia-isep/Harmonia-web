@@ -195,6 +195,15 @@ Note it in `SECURITY.md` instead. Flag if you disagree.
 
 **Goal:** `git clone && pip install -e . && harmonia serve` with no external services.
 
+**First, introduce a `create_app()` factory** so configuration is read at call time, not
+import time. Today `backend/main.py` builds the app, reads CORS origins, and runs
+`Base.metadata.create_all` at import, and `backend/models/database.py` builds the engine at
+import from `DATABASE_URL`. That import-time coupling is why tests must set env vars before
+importing `backend.main` (the CORS/conftest `CORS_ORIGINS` workaround is the symptom) and
+why a fresh clone with no `.env` cannot `import backend.main` at all. Move app construction,
+engine creation, and table setup into functions invoked at startup; the steps below assume
+this factory.
+
 1. `backend/models/database.py`: default `DATABASE_URL` to `sqlite:///./harmonia.db`.
    Add `connect_args={"check_same_thread": False}` for SQLite only.
 2. **Add a `PRAGMA foreign_keys=ON` event listener** on connect. Without it SQLite
