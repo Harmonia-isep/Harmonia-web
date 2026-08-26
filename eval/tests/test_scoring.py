@@ -9,9 +9,11 @@ run anywhere in well under a second. Run from the eval directory, e.g.:
 import pytest
 from scoring import (
     Key,
+    best_key_score,
     key_category,
     key_score,
     parse_key,
+    parse_key_labels,
     tempo_accuracy1,
     tempo_accuracy2,
     tempo_is_octave_error,
@@ -110,6 +112,57 @@ def test_key_categories_are_mutually_exclusive_over_all_pairs():
             assert counts["relative"] == 1
             assert counts["parallel"] == 1
             assert counts["other"] == 20
+
+
+# --------------------------------------------------------------------------- #
+# Multi-label references (best-of rule)
+# --------------------------------------------------------------------------- #
+
+
+def test_parse_key_labels_single():
+    assert parse_key_labels("A minor") == [Key(9, "minor")]
+
+
+def test_parse_key_labels_empty():
+    assert parse_key_labels(None) == []
+    assert parse_key_labels("silence") == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "C major | A minor",
+        "C major/A minor",
+        "C major, A minor",
+        "C major and A minor",
+        "C major\nA minor",
+    ],
+)
+def test_parse_key_labels_multi_delimiters(text):
+    assert parse_key_labels(text) == [Key(0, "major"), Key(9, "minor")]
+
+
+def test_parse_key_labels_dedupes_enharmonic_repeats():
+    # F# and Gb are the same pitch class; keep one label.
+    assert parse_key_labels("F# major | Gb major") == [Key(6, "major")]
+
+
+def test_best_key_score_takes_the_highest_weight():
+    refs = [Key(0, "major"), Key(9, "minor")]  # C major or A minor acceptable
+    # An A-minor estimate is exact against the second label -> 1.0, not the 0.3
+    # relative it would score against C major alone.
+    assert best_key_score(refs, Key(9, "minor")) == (1.0, "correct")
+    # A G-major estimate is a fifth above C major (0.5) and unrelated to A minor;
+    # best-of keeps the 0.5.
+    assert best_key_score(refs, Key(7, "major")) == (0.5, "fifth")
+
+
+def test_best_key_score_single_label_matches_key_score():
+    ref = Key(2, "minor")
+    for est_pc in range(12):
+        for est_mode in ("major", "minor"):
+            est = Key(est_pc, est_mode)
+            assert best_key_score([ref], est) == key_score(ref, est)
 
 
 # --------------------------------------------------------------------------- #

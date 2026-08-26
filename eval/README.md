@@ -39,15 +39,22 @@ excerpts and ships the audio in one Zenodo archive (record 1095691). Because it
 is a different, corrected annotation set of 600 (not 604) tracks, **these key
 numbers are not directly comparable** to papers that report on the original 604.
 
-**Tempo: GTZAN, not GiantSteps Tempo.** The plan intended to reuse the
-GiantSteps key audio for the tempo baseline (the "run tempo on the overlap"
-option). We verified the overlap first: the GiantSteps key set and the
+**Tempo: GTZAN, as a development regression check only.** The plan intended to
+reuse the GiantSteps key audio for the tempo baseline (the "run tempo on the
+overlap" option). We verified the overlap first: the GiantSteps key set and the
 GiantSteps tempo set share only **43 Beatport IDs** (out of 664 tempo tracks),
-so that path yields at most ~43 tempo tracks - too few for a meaningful baseline.
-GTZAN provides freely obtainable audio (public Hugging Face mirror) plus
-single-BPM tempo ground truth, giving a real 1000-track tempo baseline. This is
-a **substitution**: the result is a GTZAN tempo baseline, not a GiantSteps Tempo
-one, and is not comparable to GiantSteps Tempo papers.
+so that path yields at most ~43 tempo tracks - too few to benchmark. GTZAN
+provides freely obtainable audio (public Hugging Face mirror) plus single-BPM
+tempo ground truth. It is wired into this harness **only as a development
+regression check** - to catch shifts in tempo behaviour across analyzer edits -
+**not as an accuracy claim.** GTZAN is not EDM and is not the GiantSteps Tempo
+benchmark, so **no GTZAN tempo number belongs in the project README.**
+
+> **Tempo benchmark gap (open).** Harmonia has no accuracy benchmark for tempo.
+> GiantSteps Tempo annotations exist, but their Beatport audio is dead, and the
+> obtainable GiantSteps+ key audio overlaps the tempo set by only 43 tracks -
+> too small to benchmark. Revisit if a usable EDM tempo set with obtainable
+> audio turns up, or if we hand-annotate one. This is open, not closed.
 
 ## How scoring works
 
@@ -66,6 +73,18 @@ the subdominant confusion (a fifth below) scores as "other", exactly as
 mir_eval does. The test suite cross-checks our scoring against mir_eval across
 all 576 key pairs. We report the weighted score, the raw exact-match rate, and
 the confusion counts (fifth / relative / parallel / other) side by side.
+
+**Ambiguous (multi-label) keys.** mirdata returns the first line of each
+GiantSteps+ annotation as the reference key. GiantSteps+ is a single-key
+dataset, but the harness does not assume it. If a reference lists more than one
+acceptable key (delimited by `|`, `/`, `,`, `;`, or `and`), the estimate is
+scored against every listed key and the **highest** MIREX weight is kept
+(best-of), with the category taken from that best match. A single analyzer emits
+one key, so best-of never penalises it for choosing any acceptable label. The
+run reports how many multi-label references were seen (`n_multi_label`);
+references that parse to no key at all are excluded and counted
+(`n_unparseable_ref`). One limitation: because mirdata reads only the first
+line, any acceptable keys on later lines are not visible to the harness.
 
 **Tempo (Accuracy1 / Accuracy2).**
 

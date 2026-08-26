@@ -50,15 +50,19 @@ def evaluate_key(pairs) -> dict:
     exact = 0
     n = 0
     n_unparseable_ref = 0
+    n_multi_label = 0
     n_analysis_errors = 0
     energies: list[float] = []
     danceabilities: list[float] = []
 
     for audio_path, ref_str in pairs:
-        reference = scoring.parse_key(ref_str)
-        if reference is None:
+        # A track may list more than one acceptable key; score best-of and never
+        # penalise the analyzer for choosing any one valid label.
+        references = scoring.parse_key_labels(ref_str)
+        if not references:
             n_unparseable_ref += 1
             continue
+        n_multi_label += len(references) > 1
         try:
             out = analyze_audio(audio_path)
         except Exception as exc:  # analyzer failure on a file - record, move on
@@ -73,7 +77,7 @@ def evaluate_key(pairs) -> dict:
         if estimate is None:
             score, category = 0.0, "other"
         else:
-            score, category = scoring.key_score(reference, estimate)
+            score, category = scoring.best_key_score(references, estimate)
 
         confusion[category] += 1
         weighted_sum += score
@@ -87,6 +91,7 @@ def evaluate_key(pairs) -> dict:
         "exact_matches": exact,
         "confusion": confusion,
         "n_unparseable_ref": n_unparseable_ref,
+        "n_multi_label": n_multi_label,
         "n_analysis_errors": n_analysis_errors,
         "energy": energies,
         "danceability": danceabilities,
@@ -223,7 +228,8 @@ def render_report(report: dict) -> str:
         if key["n"]:
             lines.append(
                 f"  scored {key['n']} tracks  "
-                f"(unparseable refs skipped: {key['n_unparseable_ref']}, "
+                f"(multi-label refs scored best-of: {key['n_multi_label']}, "
+                f"unparseable refs skipped: {key['n_unparseable_ref']}, "
                 f"analysis errors: {key['n_analysis_errors']})"
             )
             lines.append(f"  weighted score (MIREX) : {key['weighted_score']:.4f}")

@@ -301,6 +301,14 @@ falsifiable.
 **Done when:** `python -m eval.run --dataset giantsteps-key` prints a scored table, and
 the baseline numbers are committed to `eval/baseline.md`.
 
+**Update (as built):** shipped as a standalone `eval/` that vendors nothing and downloads
+data on demand (see `eval/README.md`). Key uses GiantSteps+ EDM Key (600), not the
+original 604, so scores are not comparable to 604-based papers. Tempo could not use
+GiantSteps Tempo (dead Beatport audio; only a 43-track overlap with the key audio); GTZAN
+is wired in as a development regression check only, not an accuracy claim, and no GTZAN
+tempo number goes in the project README. See open question 4. Multi-label key references
+are scored best-of (the estimate is credited with its highest-weight acceptable match).
+
 ---
 
 ### Phase 5: job processing and feature store
@@ -405,3 +413,10 @@ Then, in this order, re-running `eval/run` after each step:
    her, ideally before Phase 3.
 3. **Keep the upload endpoint alongside folder scanning, or replace it?** Affects how
    much of `tracks.py` survives Phase 2.
+4. **Tempo benchmark gap (OPEN).** There is no accuracy benchmark for tempo. GiantSteps
+   Tempo annotations exist, but their Beatport audio is dead, and the obtainable
+   GiantSteps+ key audio overlaps the tempo set by only 43 tracks (of 664) - too few to
+   benchmark. GTZAN is wired into `eval/` as a development regression check only, NOT an
+   accuracy claim: no GTZAN tempo number goes in the project README. Revisit if a usable
+   EDM tempo set with obtainable audio turns up, or if we hand-annotate one. Flagged
+   open, not closed.

@@ -177,6 +177,51 @@ def key_score(reference: Key, estimate: Key) -> tuple[float, str]:
     return KEY_WEIGHTS[category], category
 
 
+# Delimiters that separate multiple acceptable keys within one annotation line.
+# GiantSteps+ is a single-key dataset, but the harness handles multi-key
+# references defensively rather than silently dropping or mis-parsing them.
+_KEY_DELIMITERS = ("|", "/", ";", ",", " and ")
+
+
+def parse_key_labels(text: str | None) -> list[Key]:
+    """Parse all acceptable keys from a reference string.
+
+    Splits on common multi-key delimiters and parses each fragment, dropping
+    unparseable fragments and de-duplicating enharmonic repeats. Returns [] if
+    nothing parses (the caller counts and excludes those tracks). For the usual
+    single-key reference this returns a one-element list.
+    """
+    if text is None:
+        return []
+    normalized = text
+    for delimiter in _KEY_DELIMITERS:
+        normalized = normalized.replace(delimiter, "\n")
+
+    labels: list[Key] = []
+    seen: set[tuple[int, str]] = set()
+    for fragment in normalized.splitlines():
+        key = parse_key(fragment)
+        if key is not None and (key.pc, key.mode) not in seen:
+            seen.add((key.pc, key.mode))
+            labels.append(key)
+    return labels
+
+
+def best_key_score(references: list[Key], estimate: Key) -> tuple[float, str]:
+    """Best (highest-weight) MIREX score of an estimate over acceptable keys.
+
+    When a track lists more than one acceptable key, the analyzer - which emits
+    a single key - is credited with its best match, never penalised for picking
+    any one valid label. `references` must be non-empty.
+    """
+    best = (0.0, "other")
+    for reference in references:
+        score, category = key_score(reference, estimate)
+        if score > best[0]:
+            best = (score, category)
+    return best
+
+
 # --------------------------------------------------------------------------- #
 # Tempo scoring
 # --------------------------------------------------------------------------- #
