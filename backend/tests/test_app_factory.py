@@ -21,13 +21,30 @@ def test_sqlite_foreign_keys_enabled():
         assert conn.execute(text("PRAGMA foreign_keys")).scalar() == 1
 
 
-def test_app_builds_and_serves_without_env():
-    # No DATABASE_URL and no .env required: the factory defaults to SQLite and the
-    # app comes up. This is the fresh-clone path that used to fail at import.
-    app = create_app(database_url="sqlite:///:memory:", cors_origins=["http://testserver"])
+def test_app_serves_docs_without_frontend_build(tmp_path):
+    # CI has no npm build. The app must still construct and serve /docs (and the
+    # API-only JSON health at /), not raise at startup on a missing build directory.
+    missing = tmp_path / "no_build"
+    app = create_app(database_url="sqlite:///:memory:", frontend_dir=str(missing))
     with TestClient(app) as client:
-        assert client.get("/").status_code == 200
         assert client.get("/docs").status_code == 200
+        assert client.get("/").json() == {"message": "Harmonia API is running"}
+
+
+def test_frontend_served_and_catch_all_scoped(tmp_path):
+    # With a build present the SPA is served at / and at client-side routes, but the
+    # catch-all must not shadow the API or the docs endpoints.
+    build = tmp_path / "build"
+    (build / "static").mkdir(parents=True)
+    (build / "index.html").write_text("<!doctype html><title>Harmonia SPA</title>")
+    app = create_app(database_url="sqlite:///:memory:", frontend_dir=str(build))
+    with TestClient(app) as client:
+        assert "Harmonia SPA" in client.get("/").text          # SPA at root
+        assert "Harmonia SPA" in client.get("/library").text   # client route resolves
+        assert client.get("/docs").status_code == 200          # docs not shadowed
+        r = client.get("/api/does-not-exist")
+        assert r.status_code == 404                            # api not shadowed
+        assert "Harmonia SPA" not in r.text
 
 
 def test_deleting_track_cascades_to_children_at_db_level(db):

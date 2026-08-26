@@ -39,26 +39,35 @@ Three-tier architecture: React frontend communicates with a FastAPI backend over
 - Node.js 18+
 - ffmpeg
 
-### Backend Setup
-
-Clone the repo:
+### Setup
 
     git clone https://github.com/Harmonia-isep/Harmonia-web.git
     cd Harmonia-web
-
-Install, create the database schema, and start the server. The database defaults to
-a local SQLite file; set `DATABASE_URL` to a Postgres URL to use Postgres instead.
-
     pip install -e .
     alembic upgrade head
-    python3 -m uvicorn --factory backend.main:create_app --reload --host 0.0.0.0 --port 8000
 
-### Frontend Setup
+The database defaults to a local SQLite file (`harmonia.db`); set `DATABASE_URL` to a
+Postgres URL to use Postgres instead.
 
-    cd frontend
-    npm install
-    npm 
-    
+### Running
+
+**Single process (built frontend).** Build the React app once; one server then serves
+both the UI and the API on a single origin:
+
+    (cd frontend && npm install && npm run build)
+    python3 -m uvicorn --factory backend.main:create_app --host 127.0.0.1 --port 8000
+
+Then open http://127.0.0.1:8000.
+
+**Development (separate frontend).** Run the API and the Create React App dev server
+separately. CORS is enabled for the dev-server origin (`localhost:3000`) as a dev-only
+convenience:
+
+    python3 -m uvicorn --factory backend.main:create_app --reload --port 8000
+    # in another terminal:
+    cd frontend && npm install && npm start
+
+If the frontend build is absent, the backend logs a warning and serves the API only.
 
 ## DSP Analysis Pipeline
 

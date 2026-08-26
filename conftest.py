@@ -27,13 +27,12 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_DB_PATH}"
 test_engine = create_database_engine(poolclass=StaticPool)
 TestingSessionLocal = create_session_factory(test_engine)
 
+# frontend_dir points at a path with no build, so the app serves the API only. The
+# split-origin e2e server that needed a :8098 CORS entry is gone; e2e now runs a single
+# same-origin server, so no CORS special-casing is needed here.
 app = create_app(
     engine=test_engine,
-    cors_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8098",
-    ],
+    frontend_dir=os.path.join(tempfile.gettempdir(), "harmonia_no_frontend_build"),
 )
 
 _ALEMBIC_INI = os.path.join(os.path.dirname(__file__), "alembic.ini")

@@ -23,6 +23,12 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   child-deletion loops from `delete_track` and `delete_playlist`. Dropped the redundant
   `index=True` from the primary-key `id` columns (it duplicated the implicit PK index).
   Added a test proving the cascade fires at the database level.
+- Chunk 4: the app serves the built frontend when present. `create_app` conditionally
+  mounts StaticFiles and registers a scoped SPA catch-all (registered last, and it refuses
+  `api/`, `docs`, `openapi.json`, `redoc`), so client-side routes resolve on refresh
+  without shadowing the API or docs; a missing build logs a warning and serves the API
+  only. The e2e suite now runs a single same-origin server, retiring the split-origin CORS
+  workaround. CORS middleware stays for the split-origin dev flow (CRA on :3000).
 
 ### Phase 1: dependency and packaging hygiene
 - Removed the unused crypto pins (bcrypt, passlib, python-jose, ecdsa, rsa).
