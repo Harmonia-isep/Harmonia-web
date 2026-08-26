@@ -2,7 +2,7 @@
 # in-memory SQLite database (see conftest.py). These exercise the HTTP layer,
 # routing, request/response shapes and the ORM together.
 
-from backend.models.models import Track, Analysis
+from backend.models.models import Analysis, Track
 
 
 def test_root_health(client):

@@ -69,4 +69,4 @@ def analyze_audio(file_path: str) -> dict:
         }
     except Exception as e:
         print(f"Analysis error: {e}")
-        raise e
+        raise

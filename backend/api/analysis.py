@@ -1,14 +1,16 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.models.database import get_db
-from backend.models.models import Track, Analysis
+
 from backend.audio.analyzer import analyze_audio
+from backend.models.database import get_db
+from backend.models.models import Analysis, Track
 
 router = APIRouter()
 
 @router.post("/analyze/{track_id}")
-async def analyze_track(track_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def analyze_track(track_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     track = db.query(Track).filter(Track.id == track_id).first()
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")

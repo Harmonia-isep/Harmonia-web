@@ -4,10 +4,10 @@
 
 import hashlib
 
-import numpy as np
 import librosa
+import numpy as np
 
-from backend.api.analysis import to_camelot, camelot_compatible
+from backend.api.analysis import camelot_compatible, to_camelot
 from backend.api.users import hash_password
 from backend.audio.analyzer import analyze_audio
 

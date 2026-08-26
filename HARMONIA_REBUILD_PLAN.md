@@ -180,7 +180,10 @@ Note it in `SECURITY.md` instead. Flag if you disagree.
    `["http://localhost:3000", "http://127.0.0.1:3000"]`, and drop
    `allow_credentials=True` since there are no credentials once auth is gone.
 5. Add `.github/workflows/ci.yml`: matrix over Python 3.11/3.12/3.13, install, run
-   `pytest --cov=backend`, run `ruff check`.
+   `pytest --cov=backend`, run `ruff check`. Note: the `e2e` optional-dependency
+   extra (playwright + httpx) and its browser-driven tests stay OUT of the default
+   CI job for now, because running them needs a `playwright install chromium`
+   browser step. Add a separate opt-in e2e job later.
 6. Add `ruff` config to `pyproject.toml`. Fix what it flags, including the unused `Text`
    import at `models/models.py:1`.
 

@@ -12,9 +12,18 @@ import os
 # backend/models/database.py reads DATABASE_URL at import time.
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 
+# The CORS middleware reads CORS_ORIGINS when backend.main is imported (below),
+# so it must be set before that import - a fixture would run too late. Include
+# the e2e browser origin: test_e2e.py serves the built frontend on
+# 127.0.0.1:8098, and the headless browser's cross-origin API calls need it.
+os.environ.setdefault(
+    "CORS_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000,http://127.0.0.1:8098",
+)
+
 import numpy as np
-import soundfile as sf
 import pytest
+import soundfile as sf
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool

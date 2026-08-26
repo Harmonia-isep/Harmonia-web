@@ -12,12 +12,12 @@
 # so the browser's XHR calls reach our uvicorn. The build step is done once, in
 # the fixture, if frontend/build is missing.
 
-import os
-import socket
-import threading
 import functools
 import http.server
+import os
+import socket
 import subprocess
+import threading
 
 import pytest
 

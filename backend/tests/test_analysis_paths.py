@@ -6,10 +6,9 @@ import numpy as np
 import soundfile as sf
 
 import backend.models.database as database_module
-from backend.models.models import User, Track, Analysis
 from backend.api.analysis import run_analysis
 from backend.audio.analyzer import KEYS
-
+from backend.models.models import Analysis, Track, User
 from conftest import TestingSessionLocal
 
 

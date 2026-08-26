@@ -1,17 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+import os
+import shutil
+import uuid
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from backend.models.database import get_db
-from backend.models.models import Track, User, Analysis, PlaylistTrack
-import shutil, os, uuid
+
 from backend.audio.artwork import extract_artwork
+from backend.models.database import get_db
+from backend.models.models import Analysis, PlaylistTrack, Track, User
 
 router = APIRouter()
 
 UPLOAD_DIR = "uploads"
 
 @router.post("/upload")
-async def upload_track(
+def upload_track(
     file: UploadFile = File(...),
     title: str = Form(...),
     artist: str = Form(None),
@@ -60,10 +64,10 @@ async def upload_track(
 @router.get("/user/{user_id}")
 def get_user_tracks(
     user_id: int,
-    search: str = None,
-    key: str = None,
-    bpm_min: float = None,
-    bpm_max: float = None,
+    search: str | None = None,
+    key: str | None = None,
+    bpm_min: float | None = None,
+    bpm_max: float | None = None,
     db: Session = Depends(get_db)
 ):
     from backend.models.models import Analysis
@@ -119,10 +123,12 @@ def delete_track(track_id: int, db: Session = Depends(get_db)):
 # US18 - Export all tracks + analysis as a CSV file the user can download
 @router.get("/user/{user_id}/export")
 def export_tracks_csv(user_id: int, db: Session = Depends(get_db)):
-    from backend.models.models import Analysis
-    from fastapi.responses import StreamingResponse
     import csv
     import io
+
+    from fastapi.responses import StreamingResponse
+
+    from backend.models.models import Analysis
 
     # grab all the user's tracks
     tracks = db.query(Track).filter(Track.user_id == user_id).all()

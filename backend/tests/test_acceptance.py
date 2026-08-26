@@ -4,12 +4,14 @@
 # (US01..US19) is what shows up as pass/fail per story.
 
 import io
+
 import numpy as np
+import pytest
 import soundfile as sf
 
-from backend.models.models import Track, Analysis, Playlist, PlaylistTrack
-from backend.api.analysis import to_camelot, camelot_compatible
+from backend.api.analysis import camelot_compatible, to_camelot
 from backend.audio.analyzer import analyze_audio
+from backend.models.models import Analysis, Playlist, PlaylistTrack, Track
 
 
 def _wav_bytes(freq=440.0, sr=22050, dur=2.0):
@@ -59,6 +61,7 @@ def us05_login_invalid_rejected(client, db):
 
 def us06_passwords_stored_hashed(client, db):
     import hashlib
+
     from backend.models.models import User
     client.post("/api/users/register", json={"username": "hash_us06", "password": "pw"})
     user = db.query(User).filter(User.username == "hash_us06").first()
@@ -137,7 +140,8 @@ def us12_track_detail_includes_analysis(client, db):
 def us13_dsp_extracts_all_descriptors(client, db):
     sr, dur, freq = 22050, 2.0, 440.0
     t = np.linspace(0, dur, int(sr * dur), endpoint=False)
-    import tempfile, os
+    import os
+    import tempfile
     path = os.path.join(tempfile.gettempdir(), "us13.wav")
     sf.write(path, (0.5 * np.sin(2 * np.pi * freq * t)).astype(np.float32), sr)
     result = analyze_audio(path)
@@ -255,9 +259,6 @@ STORIES = [
     ("US18", "User can export their library as CSV", us18_export_library_csv),
     ("US19", "User can delete a track", us19_delete_track),
 ]
-
-
-import pytest
 
 
 @pytest.mark.parametrize(

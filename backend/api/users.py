@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from backend.models.database import get_db
-from backend.models.models import User
-from pydantic import BaseModel
 import hashlib
 import uuid
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from backend.models.database import get_db
+from backend.models.models import User
 
 router = APIRouter()
 

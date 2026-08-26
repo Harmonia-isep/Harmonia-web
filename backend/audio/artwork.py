@@ -1,6 +1,7 @@
 # pulls embedded album art out of an audio file, if it has any
 import os
 import uuid
+
 from mutagen import File as MutagenFile
 
 ARTWORK_DIR = "uploads/artwork"
