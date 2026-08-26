@@ -215,3 +215,14 @@ frontend/build/
 # Claude Code
 .claude/
 CLAUDE.md
+
+# Harmonia rebuild - Phase 0 cleanup
+frontend/.env
+.env
+coverage.json
+.coverage
+coverage.xml
+htmlcov/
+Harmonia-mobile/
+features/
+*.db
