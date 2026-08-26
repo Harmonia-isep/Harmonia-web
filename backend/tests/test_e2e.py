@@ -21,6 +21,10 @@ import threading
 
 import pytest
 
+# Both tests here drive a real browser, so exclude them from the default CI run
+# with -m "not e2e" (CI has no browser). Run locally with the e2e extra installed.
+pytestmark = pytest.mark.e2e
+
 API_PORT = 8099
 WEB_PORT = 8098
 API_BASE = f"http://127.0.0.1:{API_PORT}"

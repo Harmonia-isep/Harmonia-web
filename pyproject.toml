@@ -75,3 +75,13 @@ extend-immutable-calls = [
     "fastapi.Header",
     "fastapi.Cookie",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "e2e: browser-driven end-to-end tests (need Playwright and a browser); excluded from the default CI run via -m \"not e2e\"",
+]
