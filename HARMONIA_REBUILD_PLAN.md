@@ -17,7 +17,10 @@ using the Camelot wheel. It was built as a third-year LEI capstone at ISEP
 deployed on Render (backend) with Neon (Postgres).
 **Runtime:** WSL Ubuntu, Python 3.12.3, packages installed system-wide (no venv).
 **Installed DSP:** librosa 0.11.0, numpy 2.4.4, scipy 1.17.1, soundfile 0.13.1.
-**Tests:** 53 pytest items from 35 `def test_` functions across 5 files, 84% coverage.
+**Tests:** 53 items / 84% as measured on `1c865f3` (the figure in the project report);
+51 passed / 2 failed / 81% on `577e5c2` because commit `812b784` gave `run_analysis` a
+2-arg signature but left two test call sites passing 3 args (the merge inherited this red
+state rather than causing it); green again from `086a904` onward.
 
 ### The goal
 
