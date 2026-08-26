@@ -1,0 +1,246 @@
+@startuml Harmonia-ChatDomainModel
+' Domain model for the "Web Claude Agent Chat" feature
+' Platform: Harmonia (FastAPI backend + React frontend + PostgreSQL)
+' Reuses existing User / Track / Analysis / Playlist entities.
+
+title Harmonia — Web Claude Agent Chat: Domain Model
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor #FDFDFD
+  BorderColor #444444
+  ArrowColor #666666
+}
+hide circle
+
+' ======================================================
+' EXISTING DOMAIN (already in the codebase — shown for context)
+' ======================================================
+package "Existing (Music Library)" <<Rectangle>> #EEF5FF {
+
+  class User {
+    +id : int <<PK>>
+    +username : str <<unique>>
+    +password_hash : str
+    +is_guest : bool
+    +created_at : datetime
+  }
+
+  class Track {
+    +id : int <<PK>>
+    +title : str
+    +artist : str
+    +album : str
+    +file_path : str
+    +duration : float
+    +user_id : int <<FK>>
+  }
+
+  class Analysis {
+    +id : int <<PK>>
+    +track_id : int <<FK>>
+    +bpm : float
+    +key : str
+    +scale : str
+    +energy : float
+    +danceability : float
+  }
+
+  class Playlist {
+    +id : int <<PK>>
+    +name : str
+    +user_id : int <<FK>>
+    +share_token : str <<unique>>
+  }
+}
+
+Track "1" -- "0..1" Analysis
+User "1" -- "*" Track
+User "1" -- "*" Playlist
+
+' ======================================================
+' NEW: CHAT / AGENT DOMAIN
+' ======================================================
+package "Chat & Agent" <<Rectangle>> #EFFBEF {
+
+  class Agent {
+    +id : int <<PK>>
+    +name : str
+    +model : str  ' e.g. claude-opus-4-8
+    +system_prompt : text
+    +temperature : float
+    +max_tokens : int
+    +is_default : bool
+    +created_at : datetime
+    --
+    ' Configuration/persona the conversation runs under
+  }
+
+  class Conversation {
+    +id : int <<PK>>
+    +user_id : int <<FK>>
+    +agent_id : int <<FK>>
+    +title : str
+    +status : ConversationStatus
+    +created_at : datetime
+    +updated_at : datetime
+    --
+    +last_message_at : datetime
+  }
+
+  class Message {
+    +id : int <<PK>>
+    +conversation_id : int <<FK>>
+    +role : MessageRole
+    +sequence : int  ' order within conversation
+    +stop_reason : str  ' end_turn, tool_use, max_tokens
+    +created_at : datetime
+    --
+    ' Content lives in ordered ContentBlocks
+    ' so tool_use / text / image can coexist
+  }
+
+  class ContentBlock {
+    +id : int <<PK>>
+    +message_id : int <<FK>>
+    +type : ContentBlockType
+    +position : int
+    +text : text  ' when type = text
+    --
+    ' image / document blocks reference Attachment
+  }
+
+  class Attachment {
+    +id : int <<PK>>
+    +message_id : int <<FK>>
+    +kind : AttachmentKind  ' image | audio | document
+    +file_path : str
+    +mime_type : str
+    +track_id : int <<FK, nullable>>  ' link to a library Track
+    +size_bytes : int
+  }
+
+  class TokenUsage {
+    +id : int <<PK>>
+    +message_id : int <<FK>>
+    +input_tokens : int
+    +output_tokens : int
+    +cache_read_tokens : int
+    +cache_write_tokens : int
+    +model : str
+    +cost_usd : float
+  }
+}
+
+' ======================================================
+' NEW: TOOL USE (agentic capability)
+' ======================================================
+package "Tools (Agentic)" <<Rectangle>> #FFF7E6 {
+
+  class Tool {
+    +id : int <<PK>>
+    +name : str <<unique>>  ' e.g. search_tracks
+    +description : text
+    +input_schema : json  ' JSON Schema for parameters
+    +enabled : bool
+    --
+    ' Maps to Harmonia domain actions:
+    ' search_tracks, get_analysis,
+    ' recommend_tracks, create_playlist ...
+  }
+
+  class ToolCall {
+    +id : int <<PK>>
+    +content_block_id : int <<FK>>  ' the tool_use block
+    +tool_id : int <<FK>>
+    +tool_use_id : str  ' Anthropic block id
+    +input : json  ' arguments the model chose
+    +status : ToolCallStatus
+    +created_at : datetime
+  }
+
+  class ToolResult {
+    +id : int <<PK>>
+    +tool_call_id : int <<FK>>
+    +output : json
+    +is_error : bool
+    +created_at : datetime
+    --
+    ' Fed back to Claude as a tool_result block
+    ' in the next user-role message
+  }
+
+  class AgentTool <<join>> {
+    +agent_id : int <<FK>>
+    +tool_id : int <<FK>>
+    ' which tools an agent is allowed to use
+  }
+}
+
+' ======================================================
+' ENUMS
+' ======================================================
+package "Enums" <<Rectangle>> #F3F3F3 {
+  enum MessageRole {
+    user
+    assistant
+    system
+  }
+  enum ContentBlockType {
+    text
+    tool_use
+    tool_result
+    image
+    document
+  }
+  enum ConversationStatus {
+    active
+    archived
+    deleted
+  }
+  enum ToolCallStatus {
+    pending
+    running
+    completed
+    failed
+  }
+  enum AttachmentKind {
+    image
+    audio
+    document
+  }
+}
+
+' ======================================================
+' RELATIONSHIPS
+' ======================================================
+User "1"          --> "*" Conversation       : owns
+Agent "1"         --> "*" Conversation        : configures
+Conversation "1"  *-- "*" Message             : contains >
+Message "1"       *-- "*" ContentBlock        : composed of >
+Message "1"       --> "0..1" TokenUsage       : billed by
+Message "1"       --> "*" Attachment          : carries
+
+ContentBlock "1"  --> "0..1" ToolCall         : (type=tool_use)
+Tool "1"          --> "*" ToolCall            : invoked as
+ToolCall "1"      --> "0..1" ToolResult       : yields
+
+Agent "1"         --> "*" AgentTool
+Tool "1"          --> "*" AgentTool
+
+' Domain-specific tool links back into the music library
+Attachment "0..1" ..> "1" Track               : references
+ToolResult ..> Track        : may return
+ToolResult ..> Analysis     : may return
+ToolResult ..> Playlist     : may create/return
+
+' Enum usage (dashed for readability)
+Message ..> MessageRole
+ContentBlock ..> ContentBlockType
+Conversation ..> ConversationStatus
+ToolCall ..> ToolCallStatus
+Attachment ..> AttachmentKind
+
+@enduml
