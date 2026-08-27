@@ -24,7 +24,7 @@ def test_all_profiles_are_two_twelve_element_vectors():
 
 def test_resolve_profile_default_env_and_explicit(monkeypatch):
     monkeypatch.delenv("HARMONIA_KEY_PROFILE", raising=False)
-    assert resolve_profile() == DEFAULT_PROFILE == "ks"
+    assert resolve_profile() == DEFAULT_PROFILE == "edma"
     assert resolve_profile("edma") == "edma"
     assert resolve_profile("TEMPERLEY") == "temperley"  # case-insensitive
     monkeypatch.setenv("HARMONIA_KEY_PROFILE", "edma")

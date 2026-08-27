@@ -6,6 +6,19 @@ academic submission is preserved under the `v0.1.0-academic` tag.
 
 ## Unreleased
 
+### Phase 6: DSP (in progress)
+- Step 1: replaced the analyzer's argmax-tonic plus one-pitch-class binary
+  major/minor key templates with Pearson correlation of the mean chroma against
+  all 24 rotations (12 tonics times major/minor) of a selectable published key
+  profile. Added `backend/audio/key_profiles.py` with the Krumhansl-Kessler,
+  Temperley, and Faraldo EDMA profiles, each cited to its source; `estimate_key`
+  returns the winner, a confidence, and the runner-up. On GiantSteps+ (567
+  scored) the weighted MIREX score rose from 0.478 to 0.687 and exact-match from
+  34.7% to 60.5% with EDMA, now the default; KS and Temperley stay selectable
+  via `--key-profile` / `HARMONIA_KEY_PROFILE`. EDMA is corpus-matched (EDM
+  profile on an EDM corpus); see eval/baseline.md. Nothing else in the analyzer
+  changed.
+
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`
   as-is (imports and calls `analyze_audio`; the analyzer is not modified). Scores

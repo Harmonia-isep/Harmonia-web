@@ -115,3 +115,43 @@ block) to test the two suspected pathologies.
   measured ranges above rather than the current ad-hoc `-3` / divide-by-6.
 
 Reproduce: see `eval/README.md`.
+
+## Phase 6 step 1: weighted key profiles + 24-rotation correlation
+
+Replaced the argmax-tonic plus one-pitch-class binary major/minor templates with
+Pearson correlation of the mean chroma against all 24 rotations (12 tonics x
+major and minor) of a selectable published key profile. This is one change: the
+analyzer's load parameters, chroma, tempo, energy, and danceability are
+unchanged, so the rows below are directly comparable to the baseline row.
+
+Run metadata:
+
+- **Date:** 2026-08-27
+- **Analyzer measured:** `backend/audio/analyzer.py` at commit `bcababb` (the
+  24-rotation change); the profile was selected per run via `--key-profile`.
+- **Dependencies** (`requirements.lock`): librosa 0.11.0, numpy 2.4.6, scipy
+  1.17.1 (eval venv resolved numpy 2.4.4).
+- **Dataset:** GiantSteps+ EDM Key, 600 tracks; mirdata `giantsteps_key` version
+  `+`. **567 scored** (33 excluded as `<tonic> other`; 90 multi-label scored
+  best-of; 0 analysis errors) - identical accounting to the baseline row.
+
+| Profile | Weighted (MIREX) | Exact-match | correct | fifth | relative | parallel | other |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Baseline (argmax + binary templates) | 0.478 | 0.347 (197/567) | 197 | 99 | 34 | 73 | 164 |
+| Temperley (1999/2001) | 0.512 | 0.397 (225/567) | 225 | 92 | 47 | 25 | 178 |
+| Krumhansl-Kessler (`ks`) | 0.615 | 0.519 (294/567) | 294 | 79 | 23 | 42 | 129 |
+| **Faraldo EDMA** (default) | **0.687** | **0.605 (343/567)** | 343 | 67 | 18 | 37 | 102 |
+
+All three profiles beat the baseline. EDMA wins by a clear margin (+0.209
+weighted, +0.258 exact over the baseline; 197 -> 343 correct), and is now the
+analyzer default. It cuts exactly the errors the baseline was worst at: `other`
+(unrelated key) 164 -> 102, and `parallel` (wrong mode) 73 -> 37.
+
+**Why EDMA wins, and a caveat.** EDMA was derived from a corpus of electronic
+dance music, and this evaluation corpus is electronic dance music. This is a
+**corpus-matched** result: EDMA is expected to fit an EDM test set well. The
+ranking may not hold on other genres - a classical or pop corpus could favour
+Krumhansl-Kessler or Temperley, whose profiles come from a different tradition.
+Do not read "EDMA is best" as genre-independent. All three profiles stay
+selectable (`--key-profile` / `HARMONIA_KEY_PROFILE`) precisely so this can be
+retested on other corpora rather than assumed.

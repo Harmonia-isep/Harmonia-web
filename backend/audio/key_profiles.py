@@ -60,7 +60,10 @@ PROFILES: dict[str, tuple[list[float], list[float]]] = {
     ),
 }
 
-DEFAULT_PROFILE = "ks"
+# EDMA is the default: on the GiantSteps+ EDM corpus it beat KS and Temperley
+# (see eval/baseline.md). It is corpus-matched (EDM profile, EDM corpus); KS and
+# Temperley stay selectable so that ranking can be retested on other genres.
+DEFAULT_PROFILE = "edma"
 _ENV_VAR = "HARMONIA_KEY_PROFILE"
 
 

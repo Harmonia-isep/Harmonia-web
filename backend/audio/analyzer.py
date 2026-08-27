@@ -29,7 +29,7 @@ def analyze_audio(file_path: str) -> dict:
         # major/minor) of a published key profile and take the best. This
         # replaces the old argmax tonic plus one-pitch-class binary templates,
         # whose near-coin-flip mode discrimination dominated the Phase 4 key
-        # errors. Profile is selectable (default Krumhansl-Kessler); see
+        # errors. Profile is selectable (default Faraldo EDMA); see
         # backend/audio/key_profiles.py.
         estimate = estimate_key(chroma_mean)
         key = estimate.key
