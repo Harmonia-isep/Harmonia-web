@@ -155,3 +155,33 @@ Krumhansl-Kessler or Temperley, whose profiles come from a different tradition.
 Do not read "EDMA is best" as genre-independent. All three profiles stay
 selectable (`--key-profile` / `HARMONIA_KEY_PROFILE`) precisely so this can be
 retested on other corpora rather than assumed.
+
+## Phase 6 step 2: full track instead of the 45-second cap
+
+One change: dropped `duration=45` from the analyzer's `librosa.load`, so the
+whole excerpt is analyzed instead of only the first 45 seconds. Everything else
+(EDMA profile, chroma, tempo, energy, danceability) is unchanged. Same 567
+scored (33 excluded, 90 multi-label, 0 analysis errors).
+
+Run metadata:
+
+- **Date:** 2026-08-27
+- **Analyzer measured:** EDMA default with the 45-second cap removed (the Phase 6
+  step 2 change).
+- **Dependencies** (`requirements.lock`): librosa 0.11.0, numpy 2.4.6, scipy
+  1.17.1 (eval venv resolved numpy 2.4.4).
+- **Dataset:** GiantSteps+ EDM Key, 600 tracks; mirdata `giantsteps_key` version
+  `+`. 567 scored, identical accounting to the rows above.
+
+| Analyzer | Weighted (MIREX) | Exact-match | correct | fifth | relative | parallel | other |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| EDMA, 45s cap | 0.687 | 0.605 (343/567) | 343 | 67 | 18 | 37 | 102 |
+| **EDMA, full track** | **0.713** | **0.635 (360/567)** | 360 | 62 | 21 | 35 | 89 |
+
+Full track improves over the 45-second cap by +0.026 weighted and +0.030 exact
+(343 -> 360 correct). The gain is mostly in tonic selection: `other` (unrelated
+key) drops 102 -> 89, because the analyzer no longer judges the whole track from
+its intro. It is a real but **modest** win - far smaller than the profile change
+in step 1 - which confirms the Phase 6 reorder: the profile and correlation work
+was the large lever, full track a smaller increment. Cost: about 2.5x slower per
+track (1.34 s vs 0.54 s on these 2-minute excerpts), acceptable for a local tool.

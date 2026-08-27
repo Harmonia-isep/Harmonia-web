@@ -8,10 +8,11 @@ KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 def analyze_audio(file_path: str) -> dict:
     try:
-        # Load mono at 22050 Hz, capped at 45 seconds. Mono + lower sample
-        # rate + shorter window keeps memory low enough for the free-tier
-        # server. This is plenty of audio to measure BPM, key, energy etc.
-        y, sr = librosa.load(file_path, sr=22050, mono=True, duration=45)
+        # Load the full track, mono at 22050 Hz. Phase 6 step 2 dropped the old
+        # 45-second cap: analyzing only the intro hurt key accuracy, and the
+        # free-tier memory ceiling the cap protected no longer applies now that
+        # this runs locally.
+        y, sr = librosa.load(file_path, sr=22050, mono=True)
 
         # Compute the onset envelope ONCE - both BPM and danceability use it.
         # Reusing it avoids running the expensive beat tracker twice.

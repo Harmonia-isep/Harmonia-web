@@ -18,6 +18,11 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   via `--key-profile` / `HARMONIA_KEY_PROFILE`. EDMA is corpus-matched (EDM
   profile on an EDM corpus); see eval/baseline.md. Nothing else in the analyzer
   changed.
+- Step 2: dropped the analyzer's 45-second load cap (`duration=45`), so the full
+  track is analyzed instead of only the intro. On GiantSteps+ (567 scored, EDMA
+  profile) weighted rose 0.687 to 0.713 and exact-match 60.5% to 63.5%, mostly
+  from better tonic selection (`other` errors 102 to 89), at about 2.5x the
+  per-track cost. Nothing else in the analyzer changed.
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`
