@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Where the backend lives. In production this is set via REACT_APP_API_URL
-// to the Render URL. Locally falls back to localhost.
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Where the backend lives. In production this is set via VITE_API_URL at build
+// time. Locally falls back to localhost.
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const API = axios.create({ baseURL: `${BASE}/api` });
 
