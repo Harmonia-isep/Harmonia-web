@@ -401,8 +401,15 @@ Then, in this order, re-running `eval/run` after each step:
    of 22 disagreements are octave relations). On the 43 gold tracks the analyzer scores
    Acc1 0.419 with only 4 octave errors - too small a population, and no larger
    genre-correct reference exists. See `eval/baseline.md` and open question 6.
-6. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred
-   during the academic phase.
+6. **Persist the beat grid.** **Done:** `analyze_audio` now returns the beat times
+   (previously computed for danceability, then discarded) and `run_analysis` stores them in
+   a generic SQLAlchemy JSON column on `analyses` (`beat_grid`, portable SQLite/Postgres),
+   served via `GET /api/analysis/{id}/beats` for the US04 overlay. Stored as JSON, not
+   Parquet: a beat grid is one short 1-D array per track, where Parquet buys nothing. The
+   `Analysis(**result)` spread was replaced with explicit field mapping so the analyzer
+   output and the schema change independently. The **Parquet feature store** from the
+   original design is deferred, and would apply to chroma matrices and segment data if those
+   ever land - not to the beat grid.
 7. **Recalibrate energy and danceability against the measured ranges in
    `eval/baseline.md`.** **Done in part (constants recalibrated):** the existing formula's
    per-component constants were replaced with robust corpus p2/p98 min-max maps, so both

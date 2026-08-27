@@ -63,6 +63,14 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   reference exists. Recorded with the tempo baseline and a new open question: tempo
   detection is worse than expected and its errors are mostly non-octave. No analyzer
   change. See eval/baseline.md.
+- Persist beat grid: `analyze_audio` now returns the beat times (previously computed for
+  danceability and discarded) and `run_analysis` stores them in a generic JSON column
+  (`analyses.beat_grid`, portable across SQLite and Postgres), served via
+  `GET /api/analysis/{id}/beats` for the beat overlay (US04). Migration 5afbc2f7ed44 adds
+  the nullable column. Replaced the `Analysis(**result)` spread with explicit field mapping
+  so the analyzer output and the schema change independently and a new analyzer key can no
+  longer crash the write with an opaque error. The Parquet feature store is deferred (for
+  chroma / segment data, not the beat grid).
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`

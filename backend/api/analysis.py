@@ -27,6 +27,9 @@ def run_analysis(track_id: int, file_path: str, session_factory):
     db = session_factory()
     try:
         result = analyze_audio(file_path)
+        # Explicit field mapping, not Analysis(**result): the analyzer's output
+        # keys and the database schema stay independently changeable, and a new
+        # analyzer key can no longer crash the write with an opaque error.
         existing = db.query(Analysis).filter(Analysis.track_id == track_id).first()
         if existing:
             existing.bpm = result["bpm"]
@@ -34,9 +37,17 @@ def run_analysis(track_id: int, file_path: str, session_factory):
             existing.scale = result["scale"]
             existing.energy = result["energy"]
             existing.danceability = result["danceability"]
+            existing.beat_grid = result["beats"]
         else:
-            analysis = Analysis(track_id=track_id, **result)
-            db.add(analysis)
+            db.add(Analysis(
+                track_id=track_id,
+                bpm=result["bpm"],
+                key=result["key"],
+                scale=result["scale"],
+                energy=result["energy"],
+                danceability=result["danceability"],
+                beat_grid=result["beats"],
+            ))
         db.commit()
     finally:
         db.close()
@@ -55,6 +66,15 @@ def get_analysis(track_id: int, db: Session = Depends(get_db)):
         "danceability": analysis.danceability,
         "analyzed_at": analysis.analyzed_at
     }
+
+
+@router.get("/{track_id}/beats")
+def get_beats(track_id: int, db: Session = Depends(get_db)):
+    """The beat grid (beat times in seconds) for a track, for the beat overlay."""
+    analysis = db.query(Analysis).filter(Analysis.track_id == track_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="No analysis found for this track")
+    return {"track_id": track_id, "beats": analysis.beat_grid or []}
 
 
 # returns frequency spectrum data for a track, used to draw the FFT chart

@@ -36,6 +36,10 @@ def analyze_audio(file_path: str) -> dict:
         onset_env = librosa.onset.onset_strength(y=y, sr=sr)
         tempo, beat_frames = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
         bpm = round(float(tempo[0]))
+        # The beat grid (beat times in seconds). Computed once here and persisted
+        # for the beat overlay (US04); previously it was derived only inside the
+        # danceability branch and then discarded.
+        beat_times = librosa.frames_to_time(beat_frames, sr=sr)
 
         # Key detection uses chroma_stft (FFT-based), not chroma_cqt. chroma_cqt
         # was measured (eval/baseline.md) and was worse here: -0.094 weighted on
@@ -75,7 +79,6 @@ def analyze_audio(file_path: str) -> dict:
         # baseline.md), so its 0.2 weight is close to a constant offset here; the
         # weighting is left unchanged on purpose (that is a separate experiment).
         if len(beat_frames) > 2:
-            beat_times = librosa.frames_to_time(beat_frames, sr=sr)
             intervals = np.diff(beat_times)
 
             cv = np.std(intervals) / (np.mean(intervals) + 1e-6)
@@ -97,7 +100,8 @@ def analyze_audio(file_path: str) -> dict:
             "key": key,
             "scale": scale,
             "energy": energy,
-            "danceability": danceability
+            "danceability": danceability,
+            "beats": [round(float(t), 3) for t in beat_times],
         }
     except Exception as e:
         print(f"Analysis error: {e}")

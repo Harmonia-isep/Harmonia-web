@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, MetaData, String
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, MetaData, String
 from sqlalchemy.orm import declarative_base, relationship
 
 # Stable, explicit constraint names so migrations can reference constraints by
@@ -37,6 +37,10 @@ class Analysis(Base):
     scale = Column(String)
     energy = Column(Float)
     danceability = Column(Float)
+    # Beat grid: list of beat times in seconds, from the beat tracker. Generic
+    # JSON so it is portable across SQLite and Postgres. Served for the beat
+    # overlay (US04); cascades away with this row when the track is deleted.
+    beat_grid = Column(JSON)
     analyzed_at = Column(DateTime, default=datetime.utcnow)
     track = relationship("Track", back_populates="analysis")
 
