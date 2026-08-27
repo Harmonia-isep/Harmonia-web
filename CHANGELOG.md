@@ -23,6 +23,13 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   profile) weighted rose 0.687 to 0.713 and exact-match 60.5% to 63.5%, mostly
   from better tonic selection (`other` errors 102 to 89), at about 2.5x the
   per-track cost. Nothing else in the analyzer changed.
+- Tuning correction (ablation, not a feature): the planned tuning-correction step
+  was found already present - librosa's `chroma_stft` auto-estimates and applies
+  tuning by default (`tuning=None`), so it was never our addition. An ablation with
+  tuning disabled (`tuning=0.0`) cost 0.007 weighted and 7 exact matches on
+  GiantSteps+ (about 24% of the corpus sits >10 cents off A440); reverted (we do
+  not ship tuning disabled) and left a comment at the call site. Removed from the
+  Phase 6 step list. See eval/baseline.md.
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`

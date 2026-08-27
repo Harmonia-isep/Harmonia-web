@@ -185,3 +185,30 @@ its intro. It is a real but **modest** win - far smaller than the profile change
 in step 1 - which confirms the Phase 6 reorder: the profile and correlation work
 was the large lever, full track a smaller increment. Cost: about 2.5x slower per
 track (1.34 s vs 0.54 s on these 2-minute excerpts), acceptable for a local tool.
+
+## Tuning correction (ablation, not an improvement step)
+
+The plan listed "tuning correction" as a Phase 6 step. It turned out to be
+**already active, and not an addition by us**: `chroma_stft(y=y, sr=sr)` uses
+`tuning=None`, and librosa auto-estimates and applies tuning internally
+(`feature/spectral.py`). So tuning correction was never absent - it came for free
+with librosa's default. To quantify what it is worth, we ran an **ablation** with
+tuning disabled (`tuning=0.0`), everything else identical, then reverted (we do
+not ship tuning disabled).
+
+Corpus tuning deviation from A440 (120-track sample): mean -1.2 cents, std 11.5;
+**63% within +/-5 cents**, 76% within +/-10 cents, but **~24% beyond +/-10 cents**
+(range -32 to +48). Most tracks are near A440, with a detuned tail.
+
+| Analyzer (EDMA, full track) | Weighted (MIREX) | Exact-match | correct | fifth | relative | parallel | other |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| tuning on (librosa default, **shipped**) | 0.713 | 0.635 (360/567) | 360 | 62 | 21 | 35 | 89 |
+| tuning off (`tuning=0.0`, ablation) | 0.706 | 0.623 (353/567) | 353 | 68 | 21 | 35 | 90 |
+
+Disabling tuning correction costs **0.007 weighted and 7 exact matches**
+(360 -> 353), the losses going mostly to fifth errors (62 -> 68). Small but
+positive: it earns its keep on the detuned tail, and it is already on. We keep
+librosa's default (`tuning=None`); the analyzer carries a comment at the
+`chroma_stft` call warning not to hardcode `tuning=0.0`. Run metadata as in the
+step-2 section (date 2026-08-27; requirements.lock librosa 0.11.0 / numpy 2.4.6 /
+scipy 1.17.1; dataset GiantSteps+ 600, mirdata version `+`; 567 scored).

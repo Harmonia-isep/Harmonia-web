@@ -23,6 +23,11 @@ def analyze_audio(file_path: str) -> dict:
         # Key detection. We use chroma_stft (FFT-based) instead of chroma_cqt:
         # the CQT is far more memory-hungry, and the STFT version gives
         # essentially the same key result at a fraction of the RAM.
+        # tuning=None (librosa's default) makes chroma_stft auto-estimate and
+        # apply tuning correction internally (see librosa feature/spectral.py).
+        # This is our tuning correction; do NOT remove it or hardcode tuning=0.0.
+        # Ablation (eval/baseline.md): disabling it costs ~0.007 weighted and 7
+        # tracks on GiantSteps+ (~24% of the corpus sits >10 cents off A440).
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         chroma_mean = chroma.mean(axis=1)
 

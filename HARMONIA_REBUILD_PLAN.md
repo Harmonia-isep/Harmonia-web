@@ -377,23 +377,28 @@ Then, in this order, re-running `eval/run` after each step:
    confusion the baseline exposed.
 2. **Full track instead of 45s.** Drop `duration=45`. Analyze the whole file in
    overlapping windows and aggregate. The current code analyzes only the intro.
-3. **Tuning correction.** `librosa.estimate_tuning` feeding the chroma call. Cheap; real
-   fix for anything not mastered at A440.
-4. **HPSS.** Separate the harmonic component before chroma so percussion stops polluting
+   Tuning correction was originally listed here as a step. It was found **already
+   present**: librosa's `chroma_stft` auto-estimates and applies tuning by default
+   (`tuning=None`), so it was never absent and was not an addition by us. It was
+   quantified by ablation instead - disabling it (`tuning=0.0`) costs 0.007 weighted
+   and 7 exact matches on GiantSteps+ (about 24% of the corpus sits >10 cents off
+   A440). Removed as a step. See `eval/baseline.md`.
+
+3. **HPSS.** Separate the harmonic component before chroma so percussion stops polluting
    pitch classes. Pure CPU cost, which no longer matters.
-5. **`chroma_cqt`.** Log-spaced semitone-aligned bins. Replaces the `chroma_stft` chosen
+4. **`chroma_cqt`.** Log-spaced semitone-aligned bins. Replaces the `chroma_stft` chosen
    purely for Render's RAM ceiling.
-6. **Tempo octave correction.** DJ-range prior plus onset-autocorrelation disambiguation
+5. **Tempo octave correction.** DJ-range prior plus onset-autocorrelation disambiguation
    for the half/double-time ambiguity.
-7. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred
+6. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred
    during the academic phase.
-8. **Recalibrate energy and danceability against the measured ranges in
+7. **Recalibrate energy and danceability against the measured ranges in
    `eval/baseline.md`.** Rebuild as a documented composite: EBU R128 integrated loudness
    via `pyloudnorm`, spectral flux, onset rate, pulse clarity, low-band energy ratio, with
    the constants fit to the measured distributions rather than the current ad-hoc `-3` /
    `divide-by-6`. Publish the formula in the README and state plainly that these are
    heuristics with no ground truth, not measured quantities.
-9. **Structural segmentation.** Laplacian segmentation for intro, breakdown, drop,
+8. **Structural segmentation.** Laplacian segmentation for intro, breakdown, drop,
    outro, surfaced as mix-in and mix-out cue points. This is the feature that turns
    Harmonia from "shows you the key" into "tells you where to mix."
 
