@@ -1,6 +1,8 @@
 import librosa
 import numpy as np
 
+from backend.audio.key_profiles import estimate_key
+
 KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 
@@ -22,15 +24,16 @@ def analyze_audio(file_path: str) -> dict:
         # essentially the same key result at a fraction of the RAM.
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         chroma_mean = chroma.mean(axis=1)
-        key_index = int(np.argmax(chroma_mean))
-        key = KEYS[key_index]
 
-        # Major vs minor - correlate the chroma against major/minor templates
-        major_profile = np.array([1,0,1,0,1,1,0,1,0,1,0,1], dtype=float)
-        minor_profile = np.array([1,0,1,1,0,1,0,1,1,0,1,0], dtype=float)
-        major_corr = np.corrcoef(chroma_mean, np.roll(major_profile, key_index))[0,1]
-        minor_corr = np.corrcoef(chroma_mean, np.roll(minor_profile, key_index))[0,1]
-        scale = "major" if major_corr > minor_corr else "minor"
+        # Correlate the mean chroma against all 24 rotations (12 tonics x
+        # major/minor) of a published key profile and take the best. This
+        # replaces the old argmax tonic plus one-pitch-class binary templates,
+        # whose near-coin-flip mode discrimination dominated the Phase 4 key
+        # errors. Profile is selectable (default Krumhansl-Kessler); see
+        # backend/audio/key_profiles.py.
+        estimate = estimate_key(chroma_mean)
+        key = estimate.key
+        scale = estimate.scale
 
         # Energy - blend loudness (RMS) with brightness (spectral centroid)
         rms_mean = float(np.mean(librosa.feature.rms(y=y)))

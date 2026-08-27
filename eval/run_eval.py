@@ -329,15 +329,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--all", action="store_true", help="evaluate both")
     parser.add_argument("--limit", type=int, default=None, help="cap tracks per dataset (quick runs)")
     parser.add_argument("--audit-sample", type=int, default=150, help="files for the saturation audit")
+    parser.add_argument("--key-profile", default=None,
+                        help="key profile for the analyzer: ks | temperley | edma "
+                             "(default: the analyzer's own default)")
     parser.add_argument("--out", default=str(Path(__file__).resolve().parent / "results"))
     args = parser.parse_args(argv)
 
     if not (args.key or args.tempo or args.all):
         parser.error("choose at least one of --key, --tempo, --all")
 
+    # The analyzer reads this env var per call (see key_profiles.resolve_profile),
+    # so setting it here selects the profile for this whole run.
+    if args.key_profile:
+        os.environ["HARMONIA_KEY_PROFILE"] = args.key_profile
+        print(f"Key profile: {args.key_profile}")
+
     import eval_datasets
 
-    report: dict = {}
+    report: dict = {"key_profile": args.key_profile or "default"}
     all_energy: list[float] = []
     all_dance: list[float] = []
     all_audio: list[str] = []
