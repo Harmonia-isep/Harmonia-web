@@ -43,6 +43,16 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   / 11 exact matches, mostly to `other` errors, at 1.3x cost, so it was reverted
   per the pre-set rule. STFT is more accurate here, not merely cheaper (correcting
   the old code comment). See eval/baseline.md.
+- Energy and danceability recalibration: replaced the ad-hoc scaling constants
+  (loudness `rms/0.3`, brightness `centroid/4000`, punch `(ratio-3)/6`) with robust
+  min-max maps from each intermediate's 2nd..98th percentile measured over
+  GiantSteps+, so both descriptors spread across their full [0, 1] range instead of
+  bunching (energy std 0.123 -> 0.183, danceability 0.115 -> 0.207; both means moved
+  to ~0.48). These are heuristics with NO ground truth (unlike key), so success is
+  distributional spread, not accuracy, and the constants are EDM-derived and may not
+  transfer. Beat steadiness barely varies on EDM (0.929-0.984), making its
+  danceability weight near a constant offset here (left unchanged; flagged as an open
+  question). See eval/baseline.md.
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`

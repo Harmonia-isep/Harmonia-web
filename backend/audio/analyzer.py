@@ -5,6 +5,23 @@ from backend.audio.key_profiles import estimate_key
 
 KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
+# Energy and danceability are heuristics with NO ground truth (unlike key, which
+# is benchmarked against GiantSteps+). The constants below are the 2nd and 98th
+# percentiles of each intermediate MEASURED over the GiantSteps+ corpus (see
+# eval/baseline.md), NOT physical thresholds. They map each intermediate onto
+# [0, 1] so the descriptors spread across their full range on this corpus.
+# Success here is distributional spread, not accuracy. These are corpus-derived
+# from EDM and may not transfer; recalibrate if the target corpus changes.
+_RMS_P2, _RMS_P98 = 0.131, 0.386                   # mean RMS energy
+_CENTROID_P2, _CENTROID_P98 = 1353.0, 3676.0       # mean spectral centroid (Hz)
+_PUNCH_RATIO_P2, _PUNCH_RATIO_P98 = 2.133, 5.959   # beat / mean-onset strength ratio
+_STEADINESS_P2, _STEADINESS_P98 = 0.929, 0.984     # 1 - CV of beat intervals
+
+
+def _scale01(value: float, lo: float, hi: float) -> float:
+    """Map a value from its corpus range [lo, hi] onto [0, 1], clipped."""
+    return max(0.0, min(1.0, (value - lo) / (hi - lo)))
+
 
 def analyze_audio(file_path: str) -> dict:
     try:
@@ -43,26 +60,30 @@ def analyze_audio(file_path: str) -> dict:
         key = estimate.key
         scale = estimate.scale
 
-        # Energy - blend loudness (RMS) with brightness (spectral centroid)
+        # Energy - blend loudness (RMS) with brightness (spectral centroid), each
+        # mapped from its corpus p2..p98 range onto [0, 1]. Heuristic, no ground
+        # truth; constants recalibrated for spread (see eval/baseline.md).
         rms_mean = float(np.mean(librosa.feature.rms(y=y)))
-        loudness = min(1.0, rms_mean / 0.3)
-        centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-        brightness = min(1.0, float(np.mean(centroid)) / 4000.0)
+        loudness = _scale01(rms_mean, _RMS_P2, _RMS_P98)
+        centroid_mean = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
+        brightness = _scale01(centroid_mean, _CENTROID_P2, _CENTROID_P98)
         energy = float(round(0.6 * loudness + 0.4 * brightness, 4))
 
-        # Danceability - blend beat steadiness with pulse strength (punch),
-        # reusing the onset envelope and beats we already computed above.
+        # Danceability - blend pulse strength (punch) with beat steadiness, each
+        # mapped from its corpus p2..p98 range onto [0, 1]. Heuristic, no ground
+        # truth. Steadiness barely varies on EDM (p2..p98 = 0.929..0.984, see
+        # baseline.md), so its 0.2 weight is close to a constant offset here; the
+        # weighting is left unchanged on purpose (that is a separate experiment).
         if len(beat_frames) > 2:
             beat_times = librosa.frames_to_time(beat_frames, sr=sr)
             intervals = np.diff(beat_times)
 
             cv = np.std(intervals) / (np.mean(intervals) + 1e-6)
-            steadiness = max(0.0, min(1.0, 1.0 - cv))
+            steadiness = _scale01(1.0 - cv, _STEADINESS_P2, _STEADINESS_P98)
 
             beat_strength = np.mean(onset_env[beat_frames])
             overall = np.mean(onset_env) + 1e-6
-            punch = beat_strength / overall
-            punch = max(0.0, min(1.0, (punch - 3.0) / 6.0))
+            punch = _scale01(beat_strength / overall, _PUNCH_RATIO_P2, _PUNCH_RATIO_P98)
 
             danceability = float(round(0.8 * punch + 0.2 * steadiness, 4))
         else:

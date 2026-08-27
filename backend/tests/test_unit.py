@@ -6,7 +6,18 @@ import librosa
 import numpy as np
 
 from backend.api.analysis import camelot_compatible, to_camelot
-from backend.audio.analyzer import analyze_audio
+from backend.audio.analyzer import (
+    _CENTROID_P2,
+    _CENTROID_P98,
+    _PUNCH_RATIO_P2,
+    _PUNCH_RATIO_P98,
+    _RMS_P2,
+    _RMS_P98,
+    _STEADINESS_P2,
+    _STEADINESS_P98,
+    _scale01,
+    analyze_audio,
+)
 
 
 class TestCamelotMapping:
@@ -56,26 +67,27 @@ class TestCamelotCompatibility:
 def _reproduce_descriptors(path):
     """Recompute energy and danceability with the exact same steps as
     analyzer.analyze_audio, so the test pins the published weightings
-    (energy = 0.6*loudness + 0.4*brightness, danceability = 0.8*punch + 0.2*steadiness)."""
-    y, sr = librosa.load(path, sr=22050, mono=True, duration=45)
+    (energy = 0.6*loudness + 0.4*brightness, danceability = 0.8*punch + 0.2*steadiness).
+    Component scaling uses the analyzer's own corpus-derived p2/p98 constants, so
+    this tracks the formula structure rather than hardcoding the constants."""
+    y, sr = librosa.load(path, sr=22050, mono=True)
     onset_env = librosa.onset.onset_strength(y=y, sr=sr)
     _, beat_frames = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
 
     rms_mean = float(np.mean(librosa.feature.rms(y=y)))
-    loudness = min(1.0, rms_mean / 0.3)
-    centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-    brightness = min(1.0, float(np.mean(centroid)) / 4000.0)
+    loudness = _scale01(rms_mean, _RMS_P2, _RMS_P98)
+    centroid_mean = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
+    brightness = _scale01(centroid_mean, _CENTROID_P2, _CENTROID_P98)
     energy = float(round(0.6 * loudness + 0.4 * brightness, 4))
 
     if len(beat_frames) > 2:
         beat_times = librosa.frames_to_time(beat_frames, sr=sr)
         intervals = np.diff(beat_times)
         cv = np.std(intervals) / (np.mean(intervals) + 1e-6)
-        steadiness = max(0.0, min(1.0, 1.0 - cv))
+        steadiness = _scale01(1.0 - cv, _STEADINESS_P2, _STEADINESS_P98)
         beat_strength = np.mean(onset_env[beat_frames])
         overall = np.mean(onset_env) + 1e-6
-        punch = beat_strength / overall
-        punch = max(0.0, min(1.0, (punch - 3.0) / 6.0))
+        punch = _scale01(beat_strength / overall, _PUNCH_RATIO_P2, _PUNCH_RATIO_P98)
         danceability = float(round(0.8 * punch + 0.2 * steadiness, 4))
     else:
         danceability = 0.0

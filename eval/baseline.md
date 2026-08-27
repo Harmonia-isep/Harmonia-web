@@ -310,3 +310,61 @@ dance music and this benchmark is electronic dance music. The 0.713 figure is
 transfer to other genres, whose tonal profiles differ. KS and Temperley stay
 selectable via `--key-profile` / `HARMONIA_KEY_PROFILE` so this is testable, not
 assumed. Do not quote 0.713 as a genre-independent number.
+
+## Energy and danceability recalibration (heuristics, NO ground truth)
+
+Unlike key - which is benchmarked against GiantSteps+ annotations - energy and
+danceability have **no ground truth**. There is nothing to be "accurate" against;
+the only goal is that each descriptor uses its full [0, 1] range on this corpus
+instead of bunching. **Success here is distributional spread, not accuracy.** The
+old constants (loudness `rms/0.3`, brightness `centroid/4000`, punch
+`(ratio-3)/6`) were ad-hoc thresholds that clipped the descriptors into a narrow
+band.
+
+Recalibration replaces each ad-hoc threshold with a robust min-max map from the
+intermediate's measured 2nd..98th percentile on GiantSteps+ (600 tracks, full
+track) onto [0, 1]. Each constant is a measured percentile, so a reader can see
+where it came from:
+
+    scale(x, lo, hi) = clip((x - lo) / (hi - lo), 0, 1)
+
+    loudness   = scale(rms_mean,           0.131, 0.386)   # RMS energy
+    brightness = scale(centroid_mean,      1353,  3676)    # spectral centroid (Hz)
+    energy     = 0.6 * loudness + 0.4 * brightness
+
+    punch      = scale(beat/mean-onset,    2.133, 5.959)   # pulse-strength ratio
+    steadiness = scale(1 - CV(beat ivals), 0.929, 0.984)   # beat regularity
+    danceability = 0.8 * punch + 0.2 * steadiness
+
+The weightings (0.6/0.4, 0.8/0.2) are unchanged; only the per-component scaling
+was recalibrated. **The constants are corpus-derived from EDM and may not
+transfer** - recalibrate if the target corpus changes.
+
+Before (the current shipped, full-track analyzer) vs after, over all 600 tracks:
+
+| Descriptor | mean | std | min - max | shape |
+| --- | --- | --- | --- | --- |
+| energy, before | 0.736 | 0.123 | 0.34 - 0.99 | bunched in [0.6, 0.9] |
+| **energy, after** | 0.480 | 0.183 | 0.00 - 1.00 | spread across [0, 1] |
+| danceability, before | 0.309 | 0.115 | 0.19 - 0.95 | bunched in [0.1, 0.4] |
+| **danceability, after** | 0.481 | 0.207 | 0.05 - 1.00 | spread across [0, 1] |
+
+Decile counts (0->1), after: energy `10 24 70 94 138 109 79 52 20 4`;
+danceability `5 45 73 102 116 88 70 55 27 19`. Both spreads roughly doubled and
+both descriptors now use their full range.
+
+**Note on the "before" numbers.** The Phase 4 distributions recorded earlier in
+this file (energy mean 0.713, danceability mean 0.320) were measured on the
+pre-step-2 analyzer (45-second cap), so they no longer match. The current shipped
+analyzer is full-track, so its distribution (energy mean 0.736, danceability mean
+0.309) is the honest "before" for this recalibration.
+
+### Open question: steadiness is near-constant on EDM
+
+The beat-steadiness intermediate (`1 - CV` of beat intervals) spans only **0.929
+to 0.984** (p2..p98) across the corpus - it barely varies, because essentially
+every EDM track has a rock-steady grid. So its 20% weight in danceability is close
+to a **constant offset** on this corpus and adds little discriminative signal. The
+weighting is **left unchanged** here (changing it is a separate experiment). Open
+question: whether to drop or reweight steadiness, or replace it with a rhythm
+feature that actually varies - to be decided on a corpus where it does.

@@ -399,11 +399,13 @@ Then, in this order, re-running `eval/run` after each step:
 6. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred
    during the academic phase.
 7. **Recalibrate energy and danceability against the measured ranges in
-   `eval/baseline.md`.** Rebuild as a documented composite: EBU R128 integrated loudness
-   via `pyloudnorm`, spectral flux, onset rate, pulse clarity, low-band energy ratio, with
-   the constants fit to the measured distributions rather than the current ad-hoc `-3` /
-   `divide-by-6`. Publish the formula in the README and state plainly that these are
-   heuristics with no ground truth, not measured quantities.
+   `eval/baseline.md`.** **Done in part (constants recalibrated):** the existing formula's
+   per-component constants were replaced with robust corpus p2/p98 min-max maps, so both
+   descriptors now spread across [0, 1] (spreads roughly doubled; see `eval/baseline.md`).
+   Stated in code and record as heuristics with no ground truth - success is spread, not
+   accuracy. Still open: the larger composite rebuild (EBU R128 integrated loudness via
+   `pyloudnorm`, spectral flux, onset rate, pulse clarity, low-band energy ratio) and
+   publishing the formula in the README.
 8. **Structural segmentation.** Laplacian segmentation for intro, breakdown, drop,
    outro, surfaced as mix-in and mix-out cue points. This is the feature that turns
    Harmonia from "shows you the key" into "tells you where to mix."
@@ -443,3 +445,10 @@ Then, in this order, re-running `eval/run` after each step:
    accuracy claim: no GTZAN tempo number goes in the project README. Revisit if a usable
    EDM tempo set with obtainable audio turns up, or if we hand-annotate one. Flagged
    open, not closed.
+5. **Steadiness is near-constant on EDM (OPEN).** The danceability beat-steadiness term
+   (`1 - CV` of beat intervals) spans only 0.929-0.984 (p2..p98) across GiantSteps+ - it
+   barely varies, because EDM grids are uniformly steady. Its 20% weight is therefore
+   close to a constant offset on this corpus. Left unchanged in the recalibration
+   (reweighting is a separate experiment). Open: drop or reweight steadiness, or swap in a
+   rhythm feature that actually varies, decided on a corpus where it does. See
+   `eval/baseline.md`.
