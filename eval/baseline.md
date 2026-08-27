@@ -268,3 +268,45 @@ plausible but **untested** reason is a profile-chroma interaction - the EDMA
 profile was derived against STFT-style chroma, so its correlation may fit the
 STFT chromagram's shape better than the CQT's. Recorded as a measured negative
 and a hypothesis for later, not a verified cause.
+
+## Phase 6 key work: summary and stopping point
+
+Key accuracy is **closed at 0.713 weighted / 63.5% exact** (GiantSteps+, 567
+scored). The full trajectory, and every change measured along the way:
+
+| Stage | Weighted | Exact | Shipped? |
+| --- | --- | --- | --- |
+| Baseline (argmax tonic + binary maj/min templates) | 0.478 | 0.347 (197/567) | - |
+| + weighted key profiles + 24-rotation correlation, EDMA (step 1) | 0.687 | 0.605 (343/567) | yes |
+| + full track, drop the 45 s cap (step 2) | **0.713** | **0.635 (360/567)** | **yes** |
+
+Changes measured but **not shipped** (each detailed in its own section above):
+
+| Change | Measurement | Outcome |
+| --- | --- | --- |
+| Tuning correction | already active via librosa's `chroma_stft` default; ablation (disabled) = -0.007 weighted / -7 exact | kept the default - it was never our addition |
+| HPSS (harmonic chroma) | +0.0007 weighted / -1 exact, like-for-like on 150 tracks; 6.2x per-track cost | reverted |
+| chroma_cqt | -0.094 weighted / -11 exact, like-for-like on 150 tracks; 1.3x cost | reverted |
+
+**Why key accuracy plateaued, and why we stopped.** The two large levers were the
+profile/correlation rewrite (+0.209 weighted) and full-track analysis (+0.026).
+After those, three successive audio-side changes - tuning (already on), HPSS, and
+chroma_cqt - each returned no gain or a loss. Front-end tuning is exhausted on
+this corpus with this approach. The remaining error budget at 0.713 (of 567
+scored: `other` 89 = 15.7%, `fifth` 62 = 10.9%, `parallel` 35 = 6.2%, `relative`
+21 = 3.7%) would need a different class of method - a learned model, or
+key-change-aware segmentation - not more front-end tweaking. Further key work is
+not pursued.
+
+**CQT hypothesis (UNVERIFIED).** chroma_cqt losing 0.094 may be a profile-chroma
+interaction: the EDMA profile was derived against STFT-style chroma, so its
+correlation may fit the STFT chromagram's shape better than the CQT's. This is a
+hypothesis only - we did not re-derive a profile against CQT chroma to test it,
+so it must not be stated as a cause.
+
+**Corpus-match caveat (EDMA).** EDMA wins because it was built from electronic
+dance music and this benchmark is electronic dance music. The 0.713 figure is
+**EDM-specific**; the profile ranking, and possibly the whole key result, may not
+transfer to other genres, whose tonal profiles differ. KS and Temperley stay
+selectable via `--key-profile` / `HARMONIA_KEY_PROFILE` so this is testable, not
+assumed. Do not quote 0.713 as a genre-independent number.
