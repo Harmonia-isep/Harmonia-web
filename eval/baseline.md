@@ -212,3 +212,29 @@ librosa's default (`tuning=None`); the analyzer carries a comment at the
 `chroma_stft` call warning not to hardcode `tuning=0.0`. Run metadata as in the
 step-2 section (date 2026-08-27; requirements.lock librosa 0.11.0 / numpy 2.4.6 /
 scipy 1.17.1; dataset GiantSteps+ 600, mirdata version `+`; 567 scored).
+
+## HPSS (measured negative result, reverted)
+
+Phase 6 step 3 (after the reorder): compute chroma on the harmonic component only
+(`librosa.effects.hpss`), so percussion stops leaking into pitch-class bins. HPSS
+is expensive, so we compared it **like-for-like on the same 150 tracks** (first
+150 of the corpus, 137 scored). Comparing a 150-track HPSS run against the
+full-567 figure (0.713) would repeat the Phase 4 sample artifact - this subset is
+harder and scores 0.647 without HPSS, so the honest baseline is the same-tracks
+non-HPSS run.
+
+| Analyzer (EDMA, full track), same 150 tracks | Weighted (MIREX) | Exact-match | correct | fifth | relative | parallel | other |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| non-HPSS (shipped) | 0.6467 | 0.555 (76/137) | 76 | 18 | 2 | 15 | 26 |
+| + HPSS (harmonic chroma) | 0.6474 | 0.547 (75/137) | 75 | 20 | 3 | 14 | 25 |
+
+Delta: **+0.0007 weighted, -1 exact match** (75 vs 76) - within noise, no
+accuracy gain. Cost: **6.2x slower per track** (8.34 s vs 1.34 s; a full-600 run
+would take ~83 min vs ~14).
+
+Per the decision rule fixed before the run (gain over +0.03 weighted -> run the
+full 567; under -> revert and record), HPSS was **reverted**. It is not a win on
+this EDM corpus: EDM is harmonically dense and `chroma_stft` already captures the
+tonal content well, so removing percussion does not move the key result. A real
+negative result: a 6.2x cost bought nothing here. Revisit only if a later change
+(e.g. `chroma_cqt`) changes the picture.

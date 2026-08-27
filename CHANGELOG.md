@@ -30,6 +30,12 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   GiantSteps+ (about 24% of the corpus sits >10 cents off A440); reverted (we do
   not ship tuning disabled) and left a comment at the call site. Removed from the
   Phase 6 step list. See eval/baseline.md.
+- HPSS (measured negative result, reverted): tried computing chroma on the
+  harmonic component (`librosa.effects.hpss`). Compared like-for-like on the same
+  150 tracks it gained +0.0007 weighted / -1 exact match (within noise) at 6.2x
+  the per-track cost (8.34 s vs 1.34 s), so it was reverted per the decision rule
+  fixed before the run. A useful negative: 6.2x cost, no gain on this EDM corpus.
+  See eval/baseline.md.
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`

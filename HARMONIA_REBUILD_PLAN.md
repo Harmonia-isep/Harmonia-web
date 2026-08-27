@@ -385,7 +385,10 @@ Then, in this order, re-running `eval/run` after each step:
    A440). Removed as a step. See `eval/baseline.md`.
 
 3. **HPSS.** Separate the harmonic component before chroma so percussion stops polluting
-   pitch classes. Pure CPU cost, which no longer matters.
+   pitch classes. **Tried and reverted:** like-for-like on 150 GiantSteps+ tracks it
+   gained +0.0007 weighted (within noise) at 6.2x the per-track cost (8.34 s vs 1.34 s).
+   A measured negative on this EDM corpus - see `eval/baseline.md`. Revisit only if a
+   later change (e.g. `chroma_cqt`) changes the picture.
 4. **`chroma_cqt`.** Log-spaced semitone-aligned bins. Replaces the `chroma_stft` chosen
    purely for Render's RAM ceiling.
 5. **Tempo octave correction.** DJ-range prior plus onset-autocorrelation disambiguation
