@@ -23,6 +23,11 @@ class Track(Base):
     artist = Column(String)
     album = Column(String)
     file_path = Column(String, nullable=False)
+    # Content hash (blake2b over file size + first/last 1 MB) written by the folder
+    # scanner: the dedup/relink key that survives library reorganisation, and the
+    # cache key any future re-analysis will use. NULL for web uploads. Indexed for
+    # lookup; not unique, so multiple NULL (upload) rows coexist.
+    content_hash = Column(String, index=True)
     artwork_path = Column(String)  # path to extracted album art, if the file had any
     duration = Column(Float)
     uploaded_at = Column(DateTime, default=datetime.utcnow)

@@ -456,7 +456,9 @@ Then, in this order, re-running `eval/run` after each step:
    build `/api/v2`, co-evolve both repos, or accept the break. Needs a conversation with
    her, ideally before Phase 3.
 3. **Keep the upload endpoint alongside folder scanning, or replace it?** Affects how
-   much of `tracks.py` survives Phase 2.
+   much of `tracks.py` survives Phase 2. **Resolved (Phase 3.5): keep both.** Upload
+   serves the web UI (copies into `uploads/`); the scan CLI (`backend/scan.py`) ingests a
+   local library in place, deduped by content hash. They coexist.
 4. **Tempo benchmark gap (OPEN).** There is no accuracy benchmark for tempo. GiantSteps
    Tempo annotations exist, but their Beatport audio is dead, and the obtainable
    GiantSteps+ key audio overlaps the tempo set by only 43 tracks (of 664) - too few to

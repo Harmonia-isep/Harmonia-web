@@ -6,6 +6,21 @@ academic submission is preserved under the `v0.1.0-academic` tag.
 
 ## Unreleased
 
+### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
+- Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local
+  audio files into the library **in place** (no copy), unlike the web upload. Dedup and
+  relink are by **content hash** (blake2b over file size + first/last 1 MB, not a full
+  read) with `file_path` as a secondary key, so a moved file relinks instead of
+  duplicating and the library survives reorganisation; the hash is also the cache key any
+  future re-analysis will use. Added `Track.content_hash` (indexed, nullable; migration
+  `42cd00ca544f`).
+- Registration is the default; `--analyze` opts into the CPU-bound DSP pass (printing a
+  track count and rough time estimate first), `--reanalyze` forces it on already-analyzed
+  tracks. Per-file error tolerance (one bad file never aborts the scan), an extension
+  whitelist, filename fallback for a missing title, and per-track commit (interruptible,
+  idempotent on re-scan). The upload endpoint is kept alongside scanning (resolves the
+  plan's open question 3).
+
 ### Phase 6: DSP (in progress)
 - Step 1: replaced the analyzer's argmax-tonic plus one-pitch-class binary
   major/minor key templates with Pearson correlation of the mean chroma against
