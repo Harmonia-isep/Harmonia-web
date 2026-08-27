@@ -238,3 +238,33 @@ this EDM corpus: EDM is harmonically dense and `chroma_stft` already captures th
 tonal content well, so removing percussion does not move the key result. A real
 negative result: a 6.2x cost bought nothing here. Revisit only if a later change
 (e.g. `chroma_cqt`) changes the picture.
+
+## chroma_cqt (measured negative result, reverted)
+
+Phase 6 step 4 (after the reorder): swap `chroma_stft` for `chroma_cqt`
+(log-spaced, semitone-aligned bins). Before running we diffed the two functions'
+defaults, because the tuning finding showed librosa's defaults carry weight.
+**Both auto-estimate tuning** when `tuning=None` (chroma_stft via
+`estimate_tuning(S)`; chroma_cqt by forwarding `tuning=None` to `cqt`, which
+auto-estimates), and `norm` (inf), `hop_length` (512) and `n_chroma` (12) are
+identical - so the comparison is fair, differing only in the transform. Compared
+**like-for-like on the same 150 tracks** (137 scored) against the shipped
+chroma_stft analyzer.
+
+| Analyzer (EDMA, full track), same 150 tracks | Weighted (MIREX) | Exact-match | correct | fifth | relative | parallel | other |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| chroma_stft (shipped) | 0.6467 | 0.555 (76/137) | 76 | 18 | 2 | 15 | 26 |
+| chroma_cqt | 0.5526 | 0.474 (65/137) | 65 | 13 | 4 | 15 | 40 |
+
+Delta: **-0.094 weighted, -11 exact matches** (65 vs 76) - a large regression,
+the damage concentrated in `other` (unrelated key) errors (26 -> 40). Cost was
+only 1.3x per track (1.78 s vs 1.34 s), so cost was not the issue; accuracy was.
+Per the decision rule fixed before the run (gain over +0.03 -> full run; under ->
+revert), chroma_cqt was **reverted**.
+
+This overturns the original code comment that STFT gave "essentially the same key
+result" as CQT: on this corpus STFT is not equivalent, it is **better**. A
+plausible but **untested** reason is a profile-chroma interaction - the EDMA
+profile was derived against STFT-style chroma, so its correlation may fit the
+STFT chromagram's shape better than the CQT's. Recorded as a measured negative
+and a hypothesis for later, not a verified cause.

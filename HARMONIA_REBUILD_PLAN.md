@@ -389,8 +389,11 @@ Then, in this order, re-running `eval/run` after each step:
    gained +0.0007 weighted (within noise) at 6.2x the per-track cost (8.34 s vs 1.34 s).
    A measured negative on this EDM corpus - see `eval/baseline.md`. Revisit only if a
    later change (e.g. `chroma_cqt`) changes the picture.
-4. **`chroma_cqt`.** Log-spaced semitone-aligned bins. Replaces the `chroma_stft` chosen
-   purely for Render's RAM ceiling.
+4. **`chroma_cqt`.** Log-spaced semitone-aligned bins. **Tried and reverted:** like-for-
+   like on 150 GiantSteps+ tracks it lost 0.094 weighted (11 exact matches) at 1.3x cost,
+   mostly to `other` errors. A measured negative on this EDM corpus with the EDMA profile
+   (see `eval/baseline.md`). STFT was not just the RAM-cheap choice - it is more accurate
+   here. Revisit only if the key profile is re-derived against CQT-style chroma.
 5. **Tempo octave correction.** DJ-range prior plus onset-autocorrelation disambiguation
    for the half/double-time ambiguity.
 6. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred

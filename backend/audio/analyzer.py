@@ -20,9 +20,11 @@ def analyze_audio(file_path: str) -> dict:
         tempo, beat_frames = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
         bpm = round(float(tempo[0]))
 
-        # Key detection. We use chroma_stft (FFT-based) instead of chroma_cqt:
-        # the CQT is far more memory-hungry, and the STFT version gives
-        # essentially the same key result at a fraction of the RAM.
+        # Key detection uses chroma_stft (FFT-based), not chroma_cqt. chroma_cqt
+        # was measured (eval/baseline.md) and was worse here: -0.094 weighted on
+        # a like-for-like 150-track slice with the EDMA profile, at 1.3x the cost.
+        # On this corpus STFT is both cheaper and more accurate, not merely a
+        # RAM-saving approximation.
         # tuning=None (librosa's default) makes chroma_stft auto-estimate and
         # apply tuning correction internally (see librosa feature/spectral.py).
         # This is our tuning correction; do NOT remove it or hardcode tuning=0.0.

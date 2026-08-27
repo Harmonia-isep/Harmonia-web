@@ -36,6 +36,13 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   the per-track cost (8.34 s vs 1.34 s), so it was reverted per the decision rule
   fixed before the run. A useful negative: 6.2x cost, no gain on this EDM corpus.
   See eval/baseline.md.
+- chroma_cqt (measured negative result, reverted): tried swapping `chroma_stft`
+  for `chroma_cqt` (log-spaced, semitone-aligned bins). Diffed the defaults first
+  (both auto-tune when `tuning=None`; `norm`/`hop_length`/`n_chroma` identical -
+  a fair comparison). Like-for-like on the same 150 tracks it lost 0.094 weighted
+  / 11 exact matches, mostly to `other` errors, at 1.3x cost, so it was reverted
+  per the pre-set rule. STFT is more accurate here, not merely cheaper (correcting
+  the old code comment). See eval/baseline.md.
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`
