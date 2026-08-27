@@ -368,3 +368,53 @@ to a **constant offset** on this corpus and adds little discriminative signal. T
 weighting is **left unchanged** here (changing it is a separate experiment). Open
 question: whether to drop or reweight steadiness, or replace it with a rhythm
 feature that actually varies - to be decided on a corpus where it does.
+
+## Tempo: octave correction not pursued, and a reference gap
+
+Unlike key, tempo has no obtainable genre-correct benchmark: the GiantSteps Tempo
+audio is unavailable (Beatport), and GTZAN is genre-mismatched (dev-regression
+only). Before attempting the planned octave correction, we tried to build an EDM
+tempo reference from the Beatport tempo carried in the GiantSteps+ metadata (491
+of 600 tracks have it; the audio is already local) and validated it against the
+hand-verified GiantSteps Tempo gold on the beatport-id overlap.
+
+**The reference failed validation.** Of the 43 overlapping tracks, 24 have both a
+metadata tempo and a gold annotation:
+
+- metadata agrees with gold on **2 of 24 within 4%** (0 of 24 exact).
+- **10 of the 22 disagreements are octave relations**, systematically half-time:
+  88 vs 175, 70 vs 140, 87 vs 174, 86 vs 173, 88 vs 175. Beatport lists high-BPM
+  genres (drum and bass, hardcore) at half tempo as a labelling convention.
+
+This **disqualifies the metadata for evaluating octave correction**: the
+reference carries the *same* half/double bias as the error under test, so it
+cannot tell a corrected octave from an uncorrected one. (It remains fine as the
+key benchmark - key does not depend on tempo.)
+
+**Current tempo baseline (43 gold tracks: local audio + hand-verified tempo):**
+
+| Metric | Value |
+| --- | --- |
+| Accuracy1 (within 4%) | 18/43 = **0.419** |
+| Accuracy2 (+ octave) | 22/43 = 0.512 |
+| octave errors (Acc2 not Acc1) | 4/43 |
+
+Caveats: 43 tracks is a small sample, and GiantSteps Tempo skews hard (it was
+built from difficult Beatport excerpts). Treat these as indicative, not a
+benchmark figure.
+
+**Decision: octave correction is not pursued.** The addressable population is only
+**4 of 43** tracks (the octave errors); the maximum possible gain is ~+0.09 Acc1
+on a 43-track sample, indistinguishable from noise. No genre-correct reference
+large enough to measure it exists, because the GiantSteps Tempo audio is
+unobtainable. Shipping an unmeasurable change to a working tempo detector is worse
+than not shipping it.
+
+**Open question (NOT closed): tempo detection has a different problem than the
+plan assumed.** Acc1 of 0.419 is low for EDM - lower than expected for the Ellis
+(2007) dynamic-programming beat tracker on strongly-metered dance music - and only
+**4 of the 25 misses are octave errors**; the other 21 are unrelated tempo values,
+not half/double. So the dominant tempo error is *not* the octave ambiguity the
+plan set out to fix: the detector is getting the tempo outright wrong on many
+tracks. This is unresolved, and cannot be resolved to a number, for lack of a
+genre-correct reference. See the plan's open questions.

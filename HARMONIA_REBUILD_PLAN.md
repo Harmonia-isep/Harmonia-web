@@ -395,7 +395,12 @@ Then, in this order, re-running `eval/run` after each step:
    (see `eval/baseline.md`). STFT was not just the RAM-cheap choice - it is more accurate
    here. Revisit only if the key profile is re-derived against CQT-style chroma.
 5. **Tempo octave correction.** DJ-range prior plus onset-autocorrelation disambiguation
-   for the half/double-time ambiguity.
+   for the half/double-time ambiguity. **Not pursued (unmeasurable):** the only EDM tempo
+   reference we could build (GiantSteps+ Beatport metadata) failed validation - it carries
+   the same half-time bias as the error under test (agrees with gold on 2/24 within 4%; 10
+   of 22 disagreements are octave relations). On the 43 gold tracks the analyzer scores
+   Acc1 0.419 with only 4 octave errors - too small a population, and no larger
+   genre-correct reference exists. See `eval/baseline.md` and open question 6.
 6. **Persist the beat grid** to Parquet. This unblocks US04, the beat overlay deferred
    during the academic phase.
 7. **Recalibrate energy and danceability against the measured ranges in
@@ -452,3 +457,13 @@ Then, in this order, re-running `eval/run` after each step:
    (reweighting is a separate experiment). Open: drop or reweight steadiness, or swap in a
    rhythm feature that actually varies, decided on a corpus where it does. See
    `eval/baseline.md`.
+6. **Tempo detection is worse than expected, and unmeasurable (OPEN).** On the 43 gold
+   GiantSteps Tempo tracks (the only genre-correct EDM tempo ground truth with obtainable
+   audio) the analyzer scores Accuracy1 0.419 - low for the Ellis (2007) beat tracker on
+   strongly-metered dance music - and only 4 of the 25 misses are octave errors; the rest
+   are outright-wrong tempos. So the tempo problem is not the half/double ambiguity the plan
+   assumed. It cannot be quantified because no large genre-correct tempo reference exists:
+   the GiantSteps Tempo audio is unobtainable, the GiantSteps+ Beatport metadata is
+   octave-biased (fails validation - agrees with gold on only 2/24 within 4%, see
+   `eval/baseline.md`), and GTZAN is genre-mismatched. This blocks any measured tempo
+   improvement. Related to open question 4.

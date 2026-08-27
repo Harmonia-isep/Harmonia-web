@@ -53,6 +53,16 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   transfer. Beat steadiness barely varies on EDM (0.929-0.984), making its
   danceability weight near a constant offset here (left unchanged; flagged as an open
   question). See eval/baseline.md.
+- Tempo octave correction: investigated and NOT pursued (unmeasurable). An EDM tempo
+  reference built from the GiantSteps+ Beatport metadata failed validation against the
+  gold GiantSteps Tempo - it agrees on only 2/24 within 4%, and 10 of 22 disagreements
+  are octave relations (Beatport lists high-BPM genres at half tempo, the same bias as
+  the error under test), so it cannot adjudicate an octave correction. On the 43 gold
+  tracks the analyzer scores Acc1 0.419 with only 4 octave errors, so the addressable
+  gain is ~+0.09 on 43 tracks, indistinguishable from noise, and no larger genre-correct
+  reference exists. Recorded with the tempo baseline and a new open question: tempo
+  detection is worse than expected and its errors are mostly non-octave. No analyzer
+  change. See eval/baseline.md.
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`
