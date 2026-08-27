@@ -41,6 +41,12 @@ class Analysis(Base):
     # JSON so it is portable across SQLite and Postgres. Served for the beat
     # overlay (US04); cascades away with this row when the track is deleted.
     beat_grid = Column(JSON)
+    # Mix points: intro end and outro start in seconds, from a beat-synchronous
+    # energy envelope. Heuristics with sanity checks only, NO ground truth (same
+    # evidential class as energy/danceability, not the benchmarked key). Major
+    # transition detection was deferred - see eval/baseline.md.
+    intro_end = Column(Float)
+    outro_start = Column(Float)
     analyzed_at = Column(DateTime, default=datetime.utcnow)
     track = relationship("Track", back_populates="analysis")
 

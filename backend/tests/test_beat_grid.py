@@ -87,3 +87,26 @@ def test_get_beats_endpoint(client, db):
     db.commit()
     db.refresh(track2)
     assert client.get(f"/api/analysis/{track2.id}/beats").status_code == 404
+
+
+def test_analyze_audio_returns_mix_points(make_tone):
+    out = analyze_audio(make_tone(freq=440.0))
+    assert isinstance(out["intro_end"], float)
+    assert isinstance(out["outro_start"], float)
+    assert 0.0 <= out["intro_end"] <= out["outro_start"]
+
+
+def test_run_analysis_persists_mix_points(client, db, make_tone):
+    track = Track(title="Mix points", file_path=make_tone(freq=329.63))
+    db.add(track)
+    db.commit()
+    db.refresh(track)
+    track_id = track.id
+
+    run_analysis(track_id, track.file_path, client.app.state.sessionmaker)
+
+    db.expire_all()
+    stored = db.query(Analysis).filter(Analysis.track_id == track_id).first()
+    assert isinstance(stored.intro_end, float)
+    assert isinstance(stored.outro_start, float)
+    assert stored.intro_end <= stored.outro_start

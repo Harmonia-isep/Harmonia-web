@@ -38,6 +38,8 @@ def run_analysis(track_id: int, file_path: str, session_factory):
             existing.energy = result["energy"]
             existing.danceability = result["danceability"]
             existing.beat_grid = result["beats"]
+            existing.intro_end = result["intro_end"]
+            existing.outro_start = result["outro_start"]
         else:
             db.add(Analysis(
                 track_id=track_id,
@@ -47,6 +49,8 @@ def run_analysis(track_id: int, file_path: str, session_factory):
                 energy=result["energy"],
                 danceability=result["danceability"],
                 beat_grid=result["beats"],
+                intro_end=result["intro_end"],
+                outro_start=result["outro_start"],
             ))
         db.commit()
     finally:

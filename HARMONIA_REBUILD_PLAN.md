@@ -418,9 +418,16 @@ Then, in this order, re-running `eval/run` after each step:
    accuracy. Still open: the larger composite rebuild (EBU R128 integrated loudness via
    `pyloudnorm`, spectral flux, onset rate, pulse clarity, low-band energy ratio) and
    publishing the formula in the README.
-8. **Structural segmentation.** Laplacian segmentation for intro, breakdown, drop,
-   outro, surfaced as mix-in and mix-out cue points. This is the feature that turns
-   Harmonia from "shows you the key" into "tells you where to mix."
+8. **Structural segmentation (mix points).** **Partly done:** intro end and outro
+   start ship as `analyses.intro_end` / `outro_start` (beat-synchronous energy
+   envelope; heuristics with sanity checks only, no ground truth - see
+   `eval/baseline.md`). **Major-transition detection is deferred:** it cannot be
+   validated on this EDM corpus without a per-track downbeat, and low-band energy
+   gives no downbeat phase on four-on-the-floor material (kick on every beat), so
+   the phase estimate was a coin flip. Future work is contingent on a trained
+   downbeat model; madmom is ruled out on licence and Python-version grounds (see
+   the section 1 constraints). Laplacian segmentation was rejected as
+   section-labelling, out of scope for mix points.
 
 **Done when:** `eval/results.md` has a per-step accuracy table from baseline to final.
 

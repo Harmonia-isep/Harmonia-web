@@ -71,6 +71,16 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   so the analyzer output and the schema change independently and a new analyzer key can no
   longer crash the write with an opaque error. The Parquet feature store is deferred (for
   chroma / segment data, not the beat grid).
+- Structural segmentation (mix points): ship `intro_end` and `outro_start` float columns on
+  `analyses`, detected from a beat-synchronous energy envelope. Heuristics with sanity
+  checks only, no ground truth (same class as energy/danceability, not the benchmarked
+  key): on 30 tracks intro_end was plausible on 27/30, outro_start on 29/30. Migration
+  0cb1637e4e45 adds the columns. Major-transition detection was investigated (Foote novelty
+  over beat-sync MFCC; 0.27s, +20% cost; stable) but DEFERRED: it cannot be validated
+  without a downbeat phase anchor, and low-band energy carries no downbeat phase on
+  four-on-the-floor EDM (kick every beat), so the phase estimate was a coin flip (no track
+  above 0.10 margin). A trained downbeat model would be required; madmom is ruled out. Full
+  investigation in eval/baseline.md.
 
 ### Phase 4: evaluation harness and baseline
 - Added `eval/`, a standalone harness that measures `backend/audio/analyzer.py`

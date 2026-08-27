@@ -418,3 +418,76 @@ not half/double. So the dominant tempo error is *not* the octave ambiguity the
 plan set out to fix: the detector is getting the tempo outright wrong on many
 tracks. This is unresolved, and cannot be resolved to a number, for lack of a
 genre-correct reference. See the plan's open questions.
+
+## Structural segmentation: mix points shipped, transitions deferred
+
+Scope was mix-point detection for DJing - intro end, outro start, and major
+transition boundaries - NOT section labelling. Intro/outro shipped; transition
+detection is deferred; the investigation is the useful part.
+
+**Approach.** Foote novelty over a beat-synchronous MFCC self-similarity matrix
+for transitions (no section labels, so it cannot drift into verse/chorus
+classification), plus a beat-synchronous energy envelope for intro end / outro
+start. Laplacian segmentation (the plan's suggestion) was rejected: it clusters
+frames into labelled sections - the labelling we were avoiding - and is heavier.
+Everything is beat-synchronous (using the persisted beat grid), which keeps the
+self-similarity matrix tiny (~250x250) and lands boundaries on beats by
+construction.
+
+**Measurements (30 fixed GiantSteps+ tracks).** Per-track cost 0.27 s (~+20% on
+the ~1.3 s analyze - cheap, because beat-syncing keeps the matrix small).
+Stability 0.91 boundary retention under +/-1 step of kernel width and peak
+threshold (not fitting noise). Transition count in [2, 8] on 28/30 tracks.
+
+**The evaluation problem, and how the null baseline resolved it.** There is no
+ground truth for mix points. The proxy was phrase-alignment: how often detected
+boundaries land on the 8-bar phrase grid, where real EDM mix points sit.
+Validated against a NULL baseline of random matched-count beats:
+
+| Metric | Detector | Null (random beats) |
+| --- | --- | --- |
+| Anchored (phrase grid at beat 0) | 0.268 | 0.084 |
+| Best-phase (best of 32 grid offsets) | 0.554 | 0.474 |
+
+The null did two jobs: it validated the anchored metric (detector 3.2x chance)
+and it **exposed the best-phase variant as gameable** - with only ~3.6 boundaries
+per track, best-of-32 offsets aligns random beats too (null 0.47 ~ detector
+0.55), so best-phase measures nothing. Discarded. But anchoring the phrase grid at
+beat 0 is wrong: beat tracking yields beats, not downbeats, so the grid is out of
+phase and the anchored 0.27 is a deflated lower bound. A correct anchor needs a
+per-track downbeat.
+
+**Why the downbeat-phase estimate failed - the root cause.** We estimated the
+phrase phase from low-band (kick/bass) energy on candidate downbeats and validated
+the estimate's confidence (winner-vs-runner-up margin) per track:
+
+| Grid | mean margin | tracks > 0.10 margin |
+| --- | --- | --- |
+| Bar (period 4) | 0.040 | 4/30 |
+| Phrase (period 32) | 0.022 | 0/30 |
+
+**No track has a phrase-phase margin above 0.10 - the estimate is a coin flip.**
+Anchoring the metric to it made the detector alignment worse than beat 0 (0.029 vs
+0.268) and below null (0.073). The root cause is **structural to the genre, not a
+tuning failure: GiantSteps+ is four-on-the-floor EDM, where the kick lands on every
+beat, not just downbeats, so low-band energy is nearly flat across beat phases and
+carries almost no downbeat phase information.** The method is sound in principle
+but the signal it needs is absent in this genre. A reliable phrase anchor would
+require a trained downbeat model (e.g. madmom's DBN), ruled out on licence and
+Python-version grounds (see HARMONIA_REBUILD_PLAN.md constraints).
+
+Three measurement instruments in a row failed validation here - Beatport tempo
+metadata (octave-biased), best-phase (gameable), the low-band phase estimate (coin
+flip). Validating each before use caught all three; each would otherwise have
+produced a confident-looking but meaningless number.
+
+**What shipped.** Major-transition detection is **deferred** - it cannot be
+validated on this corpus without a downbeat model. Intro end and outro start ship
+as `intro_end` / `outro_start` float columns on `analyses`, from the
+beat-synchronous energy envelope. These are **heuristics with sanity checks only,
+no ground truth - the same evidential class as energy and danceability, NOT the
+benchmarked key.** The only checks are plausibility: on the 30 tracks intro_end
+fell in the first quarter on **27/30** and outro_start in the last quarter on
+**29/30** - plausibility counts, not accuracy. No downbeat phase is stored (it
+cannot be estimated reliably), so bar/phrase lines are unavailable to the overlay -
+only the beat grid and these two points.

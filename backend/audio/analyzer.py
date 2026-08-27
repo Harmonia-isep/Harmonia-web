@@ -23,6 +23,38 @@ def _scale01(value: float, lo: float, hi: float) -> float:
     return max(0.0, min(1.0, (value - lo) / (hi - lo)))
 
 
+def _mix_points(rms_frames, beat_frames, beat_times):
+    """Intro end and outro start (seconds) from a beat-synchronous energy
+    envelope: the intro is the leading region below half-peak energy, the outro
+    the trailing one. A HEURISTIC with sanity checks only, NO ground truth - the
+    same evidential class as energy and danceability, not the benchmarked key.
+    Major-transition detection was deferred (see eval/baseline.md): a reliable
+    phrase anchor needs a downbeat model, and low-band energy carries almost no
+    downbeat phase information on four-on-the-floor EDM.
+    """
+    n = len(beat_times)
+    if n < 8:
+        return 0.0, float(beat_times[-1]) if n else 0.0
+    env = librosa.util.sync(rms_frames[np.newaxis, :], beat_frames, aggregate=np.mean)[0]
+    peak = float(env.max())
+    if peak <= 0:
+        return 0.0, float(beat_times[-1])
+    env = env / peak
+    above = env > 0.5
+
+    intro_end = 0.0
+    for i in range(len(above) - 4):
+        if above[i] and above[i:i + 4].mean() > 0.75:
+            intro_end = float(beat_times[min(i, n - 1)])
+            break
+    outro_start = float(beat_times[-1])
+    for j in range(len(above) - 1, -1, -1):
+        if bool(above[j]):
+            outro_start = float(beat_times[min(j, n - 1)])
+            break
+    return round(intro_end, 3), round(outro_start, 3)
+
+
 def analyze_audio(file_path: str) -> dict:
     try:
         # Load the full track, mono at 22050 Hz. Phase 6 step 2 dropped the old
@@ -67,7 +99,8 @@ def analyze_audio(file_path: str) -> dict:
         # Energy - blend loudness (RMS) with brightness (spectral centroid), each
         # mapped from its corpus p2..p98 range onto [0, 1]. Heuristic, no ground
         # truth; constants recalibrated for spread (see eval/baseline.md).
-        rms_mean = float(np.mean(librosa.feature.rms(y=y)))
+        rms_frames = librosa.feature.rms(y=y)[0]
+        rms_mean = float(np.mean(rms_frames))
         loudness = _scale01(rms_mean, _RMS_P2, _RMS_P98)
         centroid_mean = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
         brightness = _scale01(centroid_mean, _CENTROID_P2, _CENTROID_P98)
@@ -92,6 +125,10 @@ def analyze_audio(file_path: str) -> dict:
         else:
             danceability = 0.0
 
+        # Mix points: intro end and outro start. Heuristics with sanity checks
+        # only, no ground truth (see _mix_points and eval/baseline.md).
+        intro_end, outro_start = _mix_points(rms_frames, beat_frames, beat_times)
+
         # free the big array as soon as we're done with it
         del y
 
@@ -102,6 +139,8 @@ def analyze_audio(file_path: str) -> dict:
             "energy": energy,
             "danceability": danceability,
             "beats": [round(float(t), 3) for t in beat_times],
+            "intro_end": intro_end,
+            "outro_start": outro_start,
         }
     except Exception as e:
         print(f"Analysis error: {e}")
