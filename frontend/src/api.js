@@ -21,7 +21,7 @@ export const getAudioUrl = (trackId) => `${BASE}/api/tracks/${trackId}/audio`;
 export const exportCSV = () => `${BASE}/api/tracks/export`;
 
 // playlists
-export const createPlaylist = (name) => API.post(`/playlists/create?name=${name}`);
+export const createPlaylist = (name) => API.post(`/playlists/create?name=${encodeURIComponent(name)}`);
 export const getPlaylists = () => API.get('/playlists/');
 export const getPlaylistTracks = (playlistId) => API.get(`/playlists/${playlistId}/tracks`);
 export const addToPlaylist = (playlistId, trackId) => API.post(`/playlists/${playlistId}/add/${trackId}`);
