@@ -86,6 +86,16 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   relax the Node floor: `^20.19.0 || >=22.12.0` is what vite 8 itself requires, so the
   constraint react-router first surfaced now has an independent source. Frontend
   dependency count is 50, down from 94 before the vite upgrade.
+- Wired up the upload directory, closing audit finding 14 and Phase 0 step 4. It was two
+  hardcoded relative constants (`UPLOAD_DIR = "uploads"` in `api/tracks.py` and
+  `ARTWORK_DIR = "uploads/artwork"` in `audio/artwork.py`), so every test that touched the
+  upload endpoint wrote real files into the developer's `uploads/` folder. Added
+  `backend/storage.py`, which resolves the directory at call time (explicit argument, then
+  `HARMONIA_UPLOAD_DIR`, then `uploads`), the same pattern `DATABASE_URL` already uses;
+  `create_app(upload_dir=...)` creates it and publishes it on `app.state`, and artwork
+  follows it into an `artwork/` subfolder. Documented in `.env.example`. The test suite now
+  uploads into a temp directory that is removed at session teardown, verified by counting
+  `uploads/` before and after a full run.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local

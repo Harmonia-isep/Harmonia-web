@@ -7,6 +7,7 @@
 # in production. All configuration flows through the one config path (DATABASE_URL).
 
 import os
+import shutil
 import tempfile
 
 import numpy as np
@@ -30,9 +31,14 @@ TestingSessionLocal = create_session_factory(test_engine)
 # frontend_dir points at a path with no build, so the app serves the API only. The
 # split-origin e2e server that needed a :8098 CORS entry is gone; e2e now runs a single
 # same-origin server, so no CORS special-casing is needed here.
+# Uploads go to a temp directory, never the repo's real uploads/ folder: the
+# upload endpoint writes actual files, and tests should not leave debris behind.
+_UPLOAD_DIR = tempfile.mkdtemp(prefix="harmonia_test_uploads_")
+
 app = create_app(
     engine=test_engine,
     frontend_dir=os.path.join(tempfile.gettempdir(), "harmonia_no_frontend_build"),
+    upload_dir=_UPLOAD_DIR,
 )
 
 _ALEMBIC_INI = os.path.join(os.path.dirname(__file__), "alembic.ini")
@@ -46,6 +52,7 @@ def _create_schema():
     yield
     test_engine.dispose()
     os.remove(_DB_PATH)
+    shutil.rmtree(_UPLOAD_DIR, ignore_errors=True)
 
 
 @pytest.fixture

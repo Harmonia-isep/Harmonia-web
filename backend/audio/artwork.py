@@ -4,17 +4,21 @@ import uuid
 
 from mutagen import File as MutagenFile
 
-ARTWORK_DIR = "uploads/artwork"
+from backend.storage import resolve_artwork_dir
 
 
-def extract_artwork(file_path: str):
+def extract_artwork(file_path: str, artwork_dir=None):
     """
     Looks inside an audio file for embedded album art.
     If found, saves it as an image and returns the path.
     If the file has no artwork, returns None.
+
+    artwork_dir defaults to the configured upload directory's artwork/ subfolder,
+    so the CLI scanner and the upload endpoint agree on where art lands.
     """
+    artwork_dir = resolve_artwork_dir() if artwork_dir is None else artwork_dir
     # make sure the artwork folder exists
-    os.makedirs(ARTWORK_DIR, exist_ok=True)
+    os.makedirs(artwork_dir, exist_ok=True)
 
     try:
         audio = MutagenFile(file_path)
@@ -42,7 +46,7 @@ def extract_artwork(file_path: str):
 
         # save the image we found
         art_filename = f"{uuid.uuid4()}.jpg"
-        art_path = os.path.join(ARTWORK_DIR, art_filename)
+        art_path = os.path.join(artwork_dir, art_filename)
         with open(art_path, "wb") as f:
             f.write(artwork_data)
 

@@ -103,7 +103,7 @@ These came from a read-only audit of the live repo. Treat them as verified.
 | 11 | `requirements.txt` pins `bcrypt`, `passlib`, `python-jose`, `ecdsa`, `rsa`. **None are imported.** Real hashing is unsalted `hashlib.sha256`. | `requirements.txt`, `api/users.py:19-20` |
 | 12 | `docker-compose.yml` is tracked and **0 bytes**. | repo root |
 | 13 | `frontend/.env` is tracked (holds the `onrender.com` URL) despite `.gitignore` listing `.env`. | `frontend/.env` |
-| 14 | No `.env.example` anywhere. `SECRET_KEY` and `UPLOAD_FOLDER` in `.env` are dead (never read; `UPLOAD_DIR` is hardcoded to `"uploads"`). | |
+| 14 | **RESOLVED.** `.env.example` exists and documents every variable actually read. The dead `SECRET_KEY` and `UPLOAD_FOLDER` entries are gone; the upload directory is now wired up properly as `HARMONIA_UPLOAD_DIR`, resolved at call time by `backend/storage.py` and passed through `create_app(upload_dir=...)`, so it is no longer a hardcoded relative constant. Artwork follows it into an `artwork/` subfolder instead of its own hardcoded `"uploads/artwork"`. | `backend/storage.py`, `main.py`, `api/tracks.py`, `audio/artwork.py` |
 | 15 | No `.github/workflows`. No CI. | |
 | 16 | No git tags. Working tree dirty: `frontend/.env`, `frontend/package-lock.json` modified; `coverage.json`, `docs/`, `frontend/.env.render` untracked. | |
 | 17 | No job/status table. "Async" is FastAPI `BackgroundTasks` in-process; the client polls `GET /api/analysis/{track_id}` until 404 flips to 200. | `analysis.py:10-37` |
@@ -153,6 +153,10 @@ These came from a read-only audit of the live repo. Treat them as verified.
 3. `git rm --cached frontend/.env` and add `frontend/.env.example`.
 4. Add a root `.env.example` documenting every variable actually read. Remove the dead
    `SECRET_KEY` and `UPLOAD_FOLDER` entries or wire `UPLOAD_FOLDER` up properly.
+   **Done.** `SECRET_KEY` and `UPLOAD_FOLDER` were dropped from `.env.example`; the
+   upload directory was wired up during Phase 7 (not Phase 0) as `HARMONIA_UPLOAD_DIR`,
+   because the smoke e2e forced it: with the directory hardcoded, any test touching the
+   upload endpoint wrote real files into the developer's `uploads/`. See audit finding 14.
 5. Tag the agreed commit as `v0.1.0-academic` and cut a GitHub Release describing it as
    the state of the code at defence.
 

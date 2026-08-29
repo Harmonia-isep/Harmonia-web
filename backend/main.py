@@ -11,6 +11,7 @@ from sqlalchemy.engine import Engine
 
 from backend.api import analysis, playlists, tracks
 from backend.models.database import create_database_engine, create_session_factory
+from backend.storage import resolve_upload_dir
 
 logger = logging.getLogger("harmonia")
 
@@ -36,6 +37,7 @@ def create_app(
     engine: Engine | None = None,
     cors_origins: list[str] | None = None,
     frontend_dir: str | os.PathLike | None = None,
+    upload_dir: str | os.PathLike | None = None,
 ) -> FastAPI:
     """Build the Harmonia FastAPI application.
 
@@ -53,11 +55,16 @@ def create_app(
         engine = create_database_engine(database_url)
     session_factory = create_session_factory(engine)
 
-    os.makedirs("uploads", exist_ok=True)
-
     app = FastAPI(title="Harmonia API", version="1.0.0")
     app.state.engine = engine
     app.state.sessionmaker = session_factory
+
+    # Uploaded audio and the artwork extracted from it. Resolved here, at call
+    # time, so a test or a second instance can be pointed at a temp directory
+    # instead of writing into the developer's real uploads folder.
+    upload_path = resolve_upload_dir(upload_dir)
+    upload_path.mkdir(parents=True, exist_ok=True)
+    app.state.upload_dir = upload_path
 
     # CORS is only needed for the split-origin dev flow (CRA on :3000 calling the
     # backend on :8000). The single-process build is same-origin and needs none.

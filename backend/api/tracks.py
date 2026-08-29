@@ -2,21 +2,21 @@ import os
 import shutil
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from backend.audio.artwork import extract_artwork
 from backend.models.database import get_db
 from backend.models.models import Analysis, Track
+from backend.storage import resolve_artwork_dir
 
 router = APIRouter()
-
-UPLOAD_DIR = "uploads"
 
 
 @router.post("/upload")
 def upload_track(
+    request: Request,
     file: UploadFile = File(...),
     title: str = Form(...),
     artist: str = Form(None),
@@ -25,7 +25,7 @@ def upload_track(
 ):
     ext = os.path.splitext(file.filename)[1]
     filename = f"{uuid.uuid4()}{ext}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    file_path = os.path.join(request.app.state.upload_dir, filename)
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -41,7 +41,7 @@ def upload_track(
         )
 
     # try to pull album art out of the file's metadata
-    artwork_path = extract_artwork(file_path)
+    artwork_path = extract_artwork(file_path, resolve_artwork_dir(request.app.state.upload_dir))
 
     track = Track(
         title=title,
