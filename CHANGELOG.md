@@ -76,6 +76,16 @@ academic submission is preserved under the `v0.1.0-academic` tag.
 - One unconditional `localStorage.removeItem('harmonia_user')` on mount clears the
   account object left behind by pre-1.0 builds. Nothing reads it any more, so this is
   hygiene rather than a fix, and it can be dropped after the first public release.
+- Fixed `createPlaylist` interpolating the playlist name into the query string
+  unencoded, so a name containing `&`, `?` or `#` was truncated or split into stray
+  parameters. Pre-existing since the academic phase.
+- Removed `react-router-dom`, unused since the academic phase: nothing has ever imported
+  it, and the routing added with the de-auth uses `pushState` directly. Confirmed inert
+  by rebuilding, the bundle hashes are identical, so it was installed but never shipped.
+  Same class of problem as the five unused crypto pins dropped in Phase 1. This does not
+  relax the Node floor: `^20.19.0 || >=22.12.0` is what vite 8 itself requires, so the
+  constraint react-router first surfaced now has an independent source. Frontend
+  dependency count is 50, down from 94 before the vite upgrade.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local
