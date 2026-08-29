@@ -96,6 +96,27 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   follows it into an `artwork/` subfolder. Documented in `.env.example`. The test suite now
   uploads into a temp directory that is removed at session teardown, verified by counting
   `uploads/` before and after a full run.
+- Added the smoke e2e, the release bar from the Phase 7 definition of done: two tracks
+  ingested through the real upload UI, analyzed by the real DSP, and one recommending the
+  other on screen. It runs in the same CI job as the other e2e tests, because a release
+  bar that does not gate is decoration. The recommendation algorithm already had API-level
+  coverage with seeded rows, so what this adds is proof that a person can actually get
+  there.
+- The two tones were chosen by measurement rather than assumption. Analyzing C4 to C5 with
+  conftest's `make_tone` recipe showed only 3 of 28 pairs are both inside the +/-5 BPM
+  window and Camelot compatible; E4 and A4 were picked because their BPM difference is 0
+  and 9A/8A are adjacent on the wheel, so a future librosa tempo shift of up to 5 BPM in
+  either direction is absorbed. The full table is in a comment at `SMOKE_TONES`, including
+  the warning that the tempo values are arbitrary (pure tones have no percussive content,
+  so the beat tracker reads noise) and that this is not an analyzer bug to fix.
+- The smoke test builds its own app, database and upload directory instead of sharing the
+  session-scoped ones, so ingesting real tracks cannot leak rows into the other e2e
+  assertions. Cross-test pollution is solved by isolation, not by test ordering.
+- The e2e bundle is now built same-origin (`VITE_API_URL=""`) instead of baking in an
+  absolute host and port, so one build serves both e2e servers. This needed `api.js` to
+  read the variable with `??` rather than `||`, since an explicitly empty value means
+  same-origin and is meaningful, where `||` treated it as missing. An unset variable still
+  falls back to the split-origin dev backend.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local

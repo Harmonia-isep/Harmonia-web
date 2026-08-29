@@ -487,3 +487,15 @@ Then, in this order, re-running `eval/run` after each step:
    octave-biased (fails validation - agrees with gold on only 2/24 within 4%, see
    `eval/baseline.md`), and GTZAN is genre-mismatched. This blocks any measured tempo
    improvement. Related to open question 4.
+7. **The smoke e2e leans on two things Phase 5 was meant to remove (OPEN).** Writing the
+   ingest/analyze/recommend e2e surfaced two obstacles, and both trace to Phase 5 being
+   skipped rather than to anything in the test itself. First, `POST /api/analysis/
+   analyze/{id}` queues a `BackgroundTasks` job and returns immediately, so the upload
+   UI's "done" actually means "started", and there is no job row to ask about progress.
+   The test therefore polls `GET /api/analysis/{id}` until 404 flips to 200, which is
+   exactly the hack audit finding 17 describes. Second, the suite's app and database are
+   session-scoped, so a test that ingests real tracks had to construct its own app,
+   database and upload directory to keep its rows from leaking into every other e2e
+   assertion. **If the smoke test proves flaky in practice, the fix is the jobs table and
+   a real progress endpoint (Phase 5 steps 1 and 6), not more timeout tuning.** Widening
+   the timeout would hide the problem rather than address it.
