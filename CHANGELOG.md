@@ -144,6 +144,23 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   while `localhost:3000` does, and a real browser run of the whole flow (Vite dev on 3000,
   API on 8000) uploaded and analyzed a track over four cross-origin calls with no CORS
   errors and no failed requests.
+- Rewrote `README.md` (Phase 7 step 3). The previous one described a different project:
+  it advertised PostgreSQL as a prerequisite, `chroma_cqt` for key detection (the option
+  we measured as worse and reverted), a Create React App dev server with `npm start`, a
+  `users.py` and `Auth.js` that no longer exist, and setup commands that could not work
+  because a fresh clone landed on the academic branch and had no `pyproject.toml`. It also
+  misspelled a collaborator's name in two places.
+- The new one is organised around the honesty structure the project has followed
+  throughout: accuracy claims are split into three explicitly labelled tiers, benchmarked
+  (key, 0.713 weighted / 63.5% exact on GiantSteps+, 567 of 600 scored), heuristic with no
+  ground truth (energy, danceability, mix points, with the formulas published), and not
+  measured or deferred (tempo, transition detection, beat overlay). The measured negative
+  results (HPSS, `chroma_cqt`, tempo octave correction) are stated in the README rather
+  than buried, since a harness that reports losses is what makes the wins credible.
+- Added a "what this is not" section, because a single-user unauthenticated tool needs to
+  say so before someone deploys it, and a runnable `eval/` section with the real costs of
+  reproducing the table (817 MB download, about 1.7 GB on disk, roughly 20 minutes for a
+  full 567-track run, measured at 1.85 s/track).
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local
