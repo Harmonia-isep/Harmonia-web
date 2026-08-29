@@ -178,7 +178,12 @@ Note it in `SECURITY.md` instead. Flag if you disagree.
    Confirm with grep that nothing imports them first.
 2. Create `pyproject.toml` with a proper `[project]` block, entry point
    (`harmonia = "harmonia.cli:main"`), and optional extras. Keep `requirements.txt`
-   generated from it or drop it.
+   generated from it or drop it. **Dropped (2026-08-29).** It was never regenerated
+   after `pyproject.toml` landed, so it had drifted badly: it still carried `pyasn1`
+   and `six` from the removed crypto pins and was missing `alembic` entirely, so
+   installing from it produced an environment that could not migrate. `pyproject.toml`
+   plus `requirements.lock` cover both roles. Note `eval/requirements.txt` is a
+   different, still-live file for the eval harness extras.
 3. Delete the 0-byte `docker-compose.yml`. It gets rewritten in Phase 2 or not at all.
 4. Fix CORS in `backend/main.py`: explicit origins list defaulting to
    `["http://localhost:3000", "http://127.0.0.1:3000"]`, and drop
@@ -448,6 +453,14 @@ Then, in this order, re-running `eval/run` after each step:
 5. `CITATION.cff` crediting the ISEP origin and Prof. Ferreira's supervision.
 6. GHCR image published from CI.
 7. Dependency lockfile (`uv.lock` or `requirements.lock`).
+
+**Cloud decommission complete (2026-08-29).** The Render service and the Neon
+database were both deleted; the Render URL now 404s at the edge. `develop` was
+fast-forwarded into `main` so the default branch a stranger clones is the working
+code, and the academic artifact is frozen three ways: the `v0.1.0-academic` tag,
+a new `academic` branch, and commit `577e5c2`. Harmonia now has **no external
+service dependency at all**, which closes the original Phase 2 goal: `git clone &&
+pip install -e . && alembic upgrade head` runs the whole thing offline.
 
 ---
 

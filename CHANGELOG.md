@@ -117,6 +117,22 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   read the variable with `??` rather than `||`, since an explicitly empty value means
   same-origin and is meaningful, where `||` treated it as missing. An unset variable still
   falls back to the split-origin dev backend.
+- Cloud decommission complete. The Render service and the Neon database were deleted on
+  2026-08-29 (the Render URL now 404s at the edge), `develop` was fast-forwarded into
+  `main` so the default branch a stranger clones is the working code, and the academic
+  artifact is frozen three ways: the `v0.1.0-academic` tag, a new `academic` branch, and
+  commit `577e5c2`. Two stale academic-phase branches were deleted after confirming both
+  were fully contained in `main`. Harmonia now has no external service dependency at all,
+  which closes the original Phase 2 goal.
+- Removed two Render-era leftovers. `test_db.py` was a 13-line root script that connected
+  to Postgres and printed "Connected to Neon successfully"; it held no credentials but was
+  dead, and its name matched pytest's `test_*.py` pattern closely enough to be collected
+  by `pytest .`. The root `requirements.txt` was never regenerated after `pyproject.toml`
+  landed and had drifted badly: it still carried `pyasn1` and `six` from the crypto pins
+  removed in Phase 1, and was missing `alembic` entirely, so installing from it produced
+  an environment that could not migrate. `pyproject.toml` plus `requirements.lock` cover
+  both roles, and CI already installed from the lock. `eval/requirements.txt` is a
+  separate, still-live file and was left alone.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local
