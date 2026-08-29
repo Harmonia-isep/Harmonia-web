@@ -15,8 +15,8 @@ import pytest
 
 # This drives a real browser, so it is excluded from the default CI run with
 # -m "not e2e" (CI has no browser). Run locally with the e2e extra installed.
-# The login e2e was removed with auth in Phase 3; a no-auth "app opens straight to
-# the library" flow awaits the frontend rewrite (Phase 7).
+# The login e2e was removed with auth in Phase 3. Phase 7 replaced the login gate
+# with a front door: "/" is the landing page and "/library" is the app.
 pytestmark = pytest.mark.e2e
 
 PORT = 8099
@@ -138,11 +138,40 @@ def page(browser):
     context.close()
 
 
-def test_landing_page_loads_and_shows_guest_entry(server, page):
+def test_landing_renders_and_opens_the_library(server, page):
+    """The front door renders and its single entry action routes to /library."""
     page.goto(server, wait_until="networkidle")
-    # The real browser rendered the React landing page...
     assert "Harmonia" in page.content()
-    # ...and the guest entry point (Landing's onTryFree button) is visible.
-    guest_btn = page.locator("button.hero-btn-primary")
-    guest_btn.wait_for(state="visible", timeout=15000)
-    assert "Try it free" in guest_btn.inner_text()
+
+    open_btn = page.locator("button.hero-btn-primary")
+    open_btn.wait_for(state="visible", timeout=15000)
+    assert "Open Library" in open_btn.inner_text()
+
+    # Clicking it is a client-side route change, not a full page load.
+    open_btn.click()
+    page.wait_for_url("**/library", timeout=15000)
+
+    # The library view replaced the landing page: its nav is present and the
+    # landing hero is gone.
+    page.locator("nav.nav-center button", has_text="Compare").wait_for(
+        state="visible", timeout=15000
+    )
+    assert page.locator("button.hero-btn-primary").count() == 0
+
+
+def test_library_deep_link_is_served_by_the_spa_catch_all(server, page):
+    """Loading /library directly must serve index.html rather than 404.
+
+    The SPA catch-all landed in Phase 2 with no real client-side routes to
+    exercise it. /library is the first one, so this is the first test that
+    actually proves a deep link resolves instead of falling through.
+    """
+    response = page.goto(f"{server}/library", wait_until="networkidle")
+    assert response is not None, "no response for /library"
+    assert response.status == 200, f"/library returned {response.status}, expected 200"
+
+    # It really is the SPA, booted straight into the library view.
+    page.locator("nav.nav-center button", has_text="Compare").wait_for(
+        state="visible", timeout=15000
+    )
+    assert page.locator("button.hero-btn-primary").count() == 0

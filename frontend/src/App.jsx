@@ -1,31 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import Auth from './components/Auth';
 import Landing from './components/Landing';
 import Library from './components/Library';
 import Upload from './components/Upload';
 import Playlists from './components/Playlists';
 import SharedPlaylist from './components/SharedPlaylist';
 import Compare from './components/Compare';
-import { createGuestUser } from './api';
 import './App.css';
 
+// Harmonia is local-first and single-user, so there are no accounts and no
+// login gate. `/` is a front door describing the tool, `/library` is the app
+// itself, and `/shared/<token>` is a standalone public playlist page.
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [path, setPath] = useState(window.location.pathname);
   const [page, setPage] = useState('library');
-  const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
-  const [loading, setLoading] = useState(true);
 
-  // check if this is a shared playlist link
-  const sharedMatch = window.location.pathname.match(/^\/shared\/(.+)$/);
-  const sharedToken = sharedMatch ? sharedMatch[1] : null;
-
-  // Restore user from localStorage
+  // One-time cleanup of the account object left behind by pre-1.0 builds.
+  // Nothing reads it any more, so this is hygiene rather than a fix. Drop this
+  // effect after the first public release.
   useEffect(() => {
-    const stored = localStorage.getItem('harmonia_user');
-    if (stored) setUser(JSON.parse(stored));
-    setLoading(false);
+    localStorage.removeItem('harmonia_user');
   }, []);
+
+  // Client-side routing without a router: three routes do not justify one.
+  // Deep links are served by the backend SPA catch-all, which returns
+  // index.html for any non-API path.
+  useEffect(() => {
+    const onPop = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const navigate = (to) => {
+    window.history.pushState({}, '', to);
+    setPath(to);
+    window.scrollTo({ top: 0 });
+  };
 
   // Scroll listener for nav border reveal
   useEffect(() => {
@@ -36,56 +45,29 @@ export default function App() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const handleLogin = (userData) => {
-    const loggedIn = { ...userData, is_guest: false };
-    localStorage.setItem('harmonia_user', JSON.stringify(loggedIn));
-    setUser(loggedIn);
-    setShowAuth(false);
-    setPage('library');
-  };
-
-  const handleSignOut = () => {
-    localStorage.removeItem('harmonia_user');
-    setUser(null);
-  };
-
-  const handleTryFree = async () => {
-    try {
-      const res = await createGuestUser();
-      const guest = { ...res.data, is_guest: true };
-      localStorage.setItem('harmonia_user', JSON.stringify(guest));
-      setUser(guest);
-    } catch {}
-  };
-
-  const openAuth = (mode) => {
-    setAuthMode(mode);
-    setShowAuth(true);
-  };
-
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (loading) return null;
-
   // shared playlist links open a standalone public page
-  if (sharedToken) {
+  const sharedMatch = path.match(/^\/shared\/(.+)$/);
+  if (sharedMatch) {
     return (
       <div className="app">
         <header className="header">
-          <h1 className="logo" onClick={() => { window.location.href = '/'; }} style={{ cursor: 'pointer' }}>
+          <h1 className="logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
             Harmonia
           </h1>
         </header>
         <main className="main">
-          <SharedPlaylist token={sharedToken} />
+          <SharedPlaylist token={sharedMatch[1]} />
         </main>
       </div>
     );
   }
 
-  const isLanding = !user;
+  // Anything that is not the library is the front door.
+  const isLanding = !/^\/library\/?$/.test(path);
 
   return (
     <div className="app">
@@ -94,8 +76,7 @@ export default function App() {
           className="logo"
           onClick={() => {
             if (isLanding) window.scrollTo({ top: 0, behavior: 'smooth' });
-            else if (user?.is_guest) { localStorage.removeItem('harmonia_user'); setUser(null); }
-            else setPage('library');
+            else navigate('/');
           }}
           style={{ cursor: 'pointer' }}
         >
@@ -119,41 +100,22 @@ export default function App() {
         </nav>
         <div className="nav-right">
           {isLanding ? (
-            <>
-              <button className="nav-login" onClick={() => openAuth('login')}>Log in</button>
-              <button className="nav-signup" onClick={() => openAuth('register')}>Sign up</button>
-            </>
-          ) : user.is_guest ? (
-            <>
-              <button className="nav-back" onClick={() => { localStorage.removeItem('harmonia_user'); setUser(null); }}>Home</button>
-              <button className="sign-in-btn" onClick={() => openAuth('login')}>Sign In</button>
-            </>
+            <button className="nav-signup" onClick={() => navigate('/library')}>Open Library</button>
           ) : (
-            <>
-              <span className="nav-user">{user.username}</span>
-              <button className="logout" onClick={handleSignOut}>Sign Out</button>
-            </>
+            <button className="nav-back" onClick={() => navigate('/')}>Home</button>
           )}
         </div>
       </header>
 
       {isLanding ? (
-        <Landing onTryFree={handleTryFree} onOpenAuth={openAuth} />
+        <Landing onOpenLibrary={() => navigate('/library')} />
       ) : (
         <main className="main">
-          {page === 'library' && <Library user={user} />}
-          {page === 'upload' && <Upload user={user} onUploaded={() => setPage('library')} />}
-          {page === 'playlists' && <Playlists user={user} />}
-          {page === 'compare' && <Compare user={user} />}
+          {page === 'library' && <Library />}
+          {page === 'upload' && <Upload onUploaded={() => setPage('library')} />}
+          {page === 'playlists' && <Playlists />}
+          {page === 'compare' && <Compare />}
         </main>
-      )}
-
-      {showAuth && (
-        <Auth
-          onLogin={handleLogin}
-          onClose={() => setShowAuth(false)}
-          defaultMode={authMode}
-        />
       )}
     </div>
   );

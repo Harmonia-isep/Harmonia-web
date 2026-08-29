@@ -46,6 +46,36 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   names were checked against each action's `action.yml` at the new tag before assuming a
   drop-in: `python-version` and `node-version` are unchanged, and checkout takes no inputs
   here.
+- De-authed the frontend, completing Phase 3 on the client side. The login gate is
+  replaced by a front door: `/` is a landing page describing the tool and `/library` is
+  the app. A local-first single-user tool has nothing to sign up for, but opening
+  straight into an empty library with no explanation is a worse first run than a page
+  that says what the tool is. Deleted `Auth.jsx` and `Auth.css`. The `user` prop was
+  removed outright rather than replaced, because all four components that took it used
+  it for exactly one thing, `user.user_id`, which no endpoint accepts any more (seven
+  call sites, plus the `useEffect` dependency arrays that listed `user`).
+- `api.js`: deleted `createGuestUser`, `registerUser` and `loginUser`; collapsed
+  `getUserTracks` and `searchTracks` into one `getTracks(params)`, since both resolved
+  to the same `GET /api/tracks/` once the ownership filter went; repointed
+  `getUserPlaylists` to `getPlaylists` (`GET /api/playlists/`) and `exportCSV` to
+  `GET /api/tracks/export`; dropped the `user_id` argument from `createPlaylist` and the
+  `user_id` form field from the upload.
+- Routing is three routes matched on `window.location.pathname` with `pushState` and a
+  `popstate` listener, not react-router, which has been a dependency since the academic
+  phase but has never been imported. Adopting it is a separate change if the route count
+  ever justifies it.
+- Verified the SPA catch-all now that a real client route exercises it, which none did
+  when it landed in Phase 2 chunk 4: `/`, `/library`, `/library/` and `/shared/<token>`
+  each return 200 with `index.html` byte for byte, `/favicon.ico` still serves the real
+  file, and `/api/...`, `/docs` and `/openapi.json` are not shadowed.
+- e2e rewritten for the no-auth entry path: one test that the landing page renders and
+  its Open Library action routes to `/library`, with the library nav replacing the hero,
+  and one that a direct `/library` load is served by the catch-all rather than 404ing.
+  Deliberately not extended to ingest, analyze and recommend; that smoke test is its own
+  piece of work.
+- One unconditional `localStorage.removeItem('harmonia_user')` on mount clears the
+  account object left behind by pre-1.0 builds. Nothing reads it any more, so this is
+  hygiene rather than a fix, and it can be dropped after the first public release.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local

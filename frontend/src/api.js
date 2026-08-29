@@ -6,25 +6,23 @@ const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const API = axios.create({ baseURL: `${BASE}/api` });
 
-export const createGuestUser = () => API.post('/users/guest');
-export const registerUser = (data) => API.post('/users/register', data);
-export const loginUser = (data) => API.post('/users/login', data);
+// Harmonia is local-first and single-user: there are no accounts, so nothing
+// here takes a user id.
+
+// tracks
 export const uploadTrack = (formData) => API.post('/tracks/upload', formData);
-export const getUserTracks = (userId) => API.get(`/tracks/user/${userId}`);
+export const getTracks = (params) => API.get('/tracks/', { params });
 export const getTrack = (trackId) => API.get(`/tracks/${trackId}`);
 export const analyzeTrack = (trackId) => API.post(`/analysis/analyze/${trackId}`);
 export const getAnalysis = (trackId) => API.get(`/analysis/${trackId}`);
 export const getAudioUrl = (trackId) => `${BASE}/api/tracks/${trackId}/audio`;
 
-// search and filter tracks
-export const searchTracks = (userId, params) => API.get(`/tracks/user/${userId}`, { params });
-
 // export library as CSV
-export const exportCSV = (userId) => `${BASE}/api/tracks/user/${userId}/export`;
+export const exportCSV = () => `${BASE}/api/tracks/export`;
 
 // playlists
-export const createPlaylist = (name, userId) => API.post(`/playlists/create?name=${name}&user_id=${userId}`);
-export const getUserPlaylists = (userId) => API.get(`/playlists/user/${userId}`);
+export const createPlaylist = (name) => API.post(`/playlists/create?name=${name}`);
+export const getPlaylists = () => API.get('/playlists/');
 export const getPlaylistTracks = (playlistId) => API.get(`/playlists/${playlistId}/tracks`);
 export const addToPlaylist = (playlistId, trackId) => API.post(`/playlists/${playlistId}/add/${trackId}`);
 export const removeFromPlaylist = (playlistId, trackId) => API.delete(`/playlists/${playlistId}/remove/${trackId}`);

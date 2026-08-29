@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { getUserTracks, getAnalysis } from '../api';
+import { getTracks, getAnalysis } from '../api';
 import Spectrum from './Spectrum';
 import './Compare.css';
 
-export default function Compare({ user }) {
+export default function Compare() {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -14,13 +14,13 @@ export default function Compare({ user }) {
   const [rightAnalysis, setRightAnalysis] = useState(null);
 
   useEffect(() => {
-    getUserTracks(user.user_id)
+    getTracks()
       .then((res) => {
         setTracks(res.data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [user]);
+  }, []);
 
   // load analysis whenever a side changes
   useEffect(() => {

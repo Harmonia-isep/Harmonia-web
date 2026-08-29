@@ -10,7 +10,7 @@ const DEMO_ANALYSIS = {
   danceability: 0.85,
 };
 
-export default function Landing({ onTryFree, onOpenAuth }) {
+export default function Landing({ onOpenLibrary }) {
   const [demoFile, setDemoFile] = useState(null);
   const [demoProgress, setDemoProgress] = useState(0);
   const [demoPhase, setDemoPhase] = useState('idle');
@@ -80,12 +80,12 @@ export default function Landing({ onTryFree, onOpenAuth }) {
             Drop in a track. Get its BPM, key, energy, and harmonic profile in seconds.
           </p>
           <div className="hero-buttons fade-up">
-            <button className="hero-btn-primary" onClick={onTryFree}>Try it free</button>
+            <button className="hero-btn-primary" onClick={onOpenLibrary}>Open Library</button>
             <button className="hero-btn-secondary" onClick={() => scrollTo('how')}>
               See how it works <ChevronDown size={14} />
             </button>
           </div>
-          <p className="hero-muted fade-up">Free forever. No credit card.</p>
+          <p className="hero-muted fade-up">Runs on your machine. No account, no upload to anyone else.</p>
         </div>
         <div className="hero-visual fade-up">
           <div className="hero-waveform">
@@ -172,8 +172,8 @@ export default function Landing({ onTryFree, onOpenAuth }) {
                 </div>
               </div>
               <div className="demo-footer">
-                <p>Demo analysis. Sign up to analyze your actual tracks.</p>
-                <button className="demo-signup-btn" onClick={() => onOpenAuth('register')}>Sign up free</button>
+                <p>Demo analysis. Open your library to analyze your own tracks.</p>
+                <button className="demo-signup-btn" onClick={onOpenLibrary}>Open Library</button>
               </div>
             </div>
             <button className="demo-retry" onClick={resetDemo}>Try another track</button>
@@ -264,8 +264,7 @@ export default function Landing({ onTryFree, onOpenAuth }) {
       <section className="landing-section cta-section">
         <div className="cta-content fade-up">
           <h2 className="cta-headline">Ready to hear your library differently?</h2>
-          <button className="cta-btn" onClick={onTryFree}>Get started — it's free</button>
-          <button className="cta-link" onClick={() => onOpenAuth('login')}>Or log in &#8594;</button>
+          <button className="cta-btn" onClick={onOpenLibrary}>Open Library</button>
         </div>
       </section>
 

@@ -12,7 +12,7 @@ function parseFilename(filename) {
   return { artist: '', title: nameNoExt.trim() };
 }
 
-export default function Upload({ user, onUploaded }) {
+export default function Upload({ onUploaded }) {
   // Each queue item: { file, title, artist, album, status, progress, error }
   // status: 'pending' | 'uploading' | 'analyzing' | 'done' | 'error'
   const [queue, setQueue] = useState([]);
@@ -80,7 +80,6 @@ export default function Upload({ user, onUploaded }) {
         fd.append('title', item.title);
         fd.append('artist', item.artist);
         fd.append('album', item.album);
-        fd.append('user_id', user.user_id);
         const res = await uploadTrack(fd);
 
         updateItem(i, { status: 'analyzing', progress: 0 });

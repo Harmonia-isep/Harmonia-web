@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  getUserPlaylists,
+  getPlaylists,
   createPlaylist,
   getPlaylistTracks,
   deletePlaylist,
@@ -9,7 +9,7 @@ import {
 } from '../api';
 import './Playlists.css';
 
-export default function Playlists({ user }) {
+export default function Playlists() {
   const [playlists, setPlaylists] = useState([]);
   const [selected, setSelected] = useState(null);
   const [tracks, setTracks] = useState([]);
@@ -21,7 +21,7 @@ export default function Playlists({ user }) {
   // load all the user's playlists
   const loadPlaylists = () => {
     setLoading(true);
-    getUserPlaylists(user.user_id)
+    getPlaylists()
       .then((res) => {
         setPlaylists(res.data);
         setLoading(false);
@@ -31,7 +31,7 @@ export default function Playlists({ user }) {
 
   useEffect(() => {
     loadPlaylists();
-  }, [user]);
+  }, []);
 
   // open a playlist and load the tracks inside it
   const openPlaylist = async (playlist) => {
@@ -50,7 +50,7 @@ export default function Playlists({ user }) {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      await createPlaylist(newName.trim(), user.user_id);
+      await createPlaylist(newName.trim());
       setNewName('');
       loadPlaylists();
     } catch {

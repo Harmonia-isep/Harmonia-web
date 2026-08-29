@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getUserTracks, getAnalysis, searchTracks, exportCSV, getArtworkUrl, getUserPlaylists, addToPlaylist, getRecommendations } from '../api';
+import { getTracks, getAnalysis, exportCSV, getArtworkUrl, getPlaylists, addToPlaylist, getRecommendations } from '../api';
 import Waveform from './Waveform';
 import Spectrum from './Spectrum';
 import './Library.css';
 
-export default function Library({ user }) {
+export default function Library() {
   const [tracks, setTracks] = useState([]);
   const [selected, setSelected] = useState(null);
   const [analysis, setAnalysis] = useState(null);
@@ -33,7 +33,7 @@ export default function Library({ user }) {
     if (bpmMin) params.bpm_min = bpmMin;
     if (bpmMax) params.bpm_max = bpmMax;
 
-    searchTracks(user.user_id, params).then(res => {
+    getTracks(params).then(res => {
       setTracks(res.data);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -41,8 +41,8 @@ export default function Library({ user }) {
 
   useEffect(() => {
     fetchTracks();
-    getUserPlaylists(user.user_id).then(res => setPlaylists(res.data)).catch(() => {});
-  }, [user]);
+    getPlaylists().then(res => setPlaylists(res.data)).catch(() => {});
+  }, []);
 
   // search when user stops typing for 400ms
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function Library({ user }) {
           </select>
           <input type="number" placeholder="BPM min" value={bpmMin} onChange={(e) => setBpmMin(e.target.value)} />
           <input type="number" placeholder="BPM max" value={bpmMax} onChange={(e) => setBpmMax(e.target.value)} />
-          <a href={exportCSV(user.user_id)} className="export-btn" download>Export CSV</a>
+          <a href={exportCSV()} className="export-btn" download>Export CSV</a>
         </div>
         {tracks.length === 0 && <p className="empty">No tracks yet. Upload your first track!</p>}
         {tracks.map(t => (
