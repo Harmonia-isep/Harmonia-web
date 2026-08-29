@@ -27,8 +27,8 @@ per track, not something that runs live in a DJ set.
 ## Quickstart
 
 Requires **Python 3.11+** and **Node.js 20.19+ or 22.12+**. `ffmpeg` is optional:
-it is needed only for `.m4a`, `.aac` and `.opus`, because libsndfile already
-handles `.mp3`, `.wav`, `.flac` and `.ogg` natively.
+it is needed only for `.m4a` and `.aac`, because libsndfile handles `.mp3`,
+`.wav`, `.flac`, `.ogg` and `.opus` natively.
 
 ```bash
 git clone https://github.com/Harmonia-isep/Harmonia-web.git
