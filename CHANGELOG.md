@@ -26,6 +26,26 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   `build/` existed, so a source edit could pass e2e without ever being compiled. It now
   rebuilds when any build input is newer than the output, and records the API base it
   built with, since that is a build input an mtime check cannot see.
+- Vite 5 to 8, with `@vitejs/plugin-react` 4 to 6. Vite 8 replaces Rollup and esbuild
+  with the Rust-based Rolldown and Oxc, and uses Lightning CSS for CSS minification. No
+  `vite.config.js` change was needed: the renamed options (`build.rollupOptions` to
+  `build.rolldownOptions`, `esbuild` to `oxc`, `optimizeDeps.esbuildOptions` to
+  `optimizeDeps.rolldownOptions`) are all ones this project never set, and `build.outDir`
+  is unaffected. The production build went from 4.30 s to 854 ms, the bundle shrank
+  slightly (JS 285.5 to 280.4 kB, CSS 33.4 to 33.0 kB), and the output layout is
+  unchanged. Dependency count fell from 94 to 54, which cleared both advisories: `npm
+  audit` now reports 0 vulnerabilities, where before it flagged a dev-server esbuild
+  issue and three vite ones.
+- Tightened the Node floor from `>=20` to `^20.19.0 || >=22.12.0`, matching what vite 8
+  actually requires. The looser range admitted versions (20.0 to 20.18, 21.x, 22.0 to
+  22.11) on which vite 8 refuses to run.
+- Note for anyone tracking browser support: vite 8 raises the default baseline to Chrome
+  111, Firefox 114, and Safari 16.4 (from 107, 104, and 16.0).
+- Bumped `actions/checkout` to v5, `actions/setup-python` to v6, and `actions/setup-node`
+  to v5, clearing the Node 20 runtime deprecation annotation that every job carried. Input
+  names were checked against each action's `action.yml` at the new tag before assuming a
+  drop-in: `python-version` and `node-version` are unchanged, and checkout takes no inputs
+  here.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local
