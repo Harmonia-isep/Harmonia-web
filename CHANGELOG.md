@@ -180,6 +180,19 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   do not claim what you have not measured, run `eval/` for DSP changes, and expect
   negative results to be kept rather than discarded. `CITATION.cff` credits the ISEP
   origin and Prof. Ferreira's supervision, and cites the three key-profile papers.
+- Added `run.sh` and `run.bat`, launchers for people who do not want a terminal session.
+  Each creates the virtual environment, installs the dependencies, applies migrations,
+  builds the interface if it is missing, starts the server and opens a browser. They are
+  idempotent by design: the dependency install is keyed on a hash of `pyproject.toml`, the
+  frontend build is skipped when `frontend/build/index.html` exists, and only the (fast,
+  idempotent) migration step always runs. Measured on a fresh clone: **96 s cold, 3 s
+  warm**. Missing or too-old Python and Node produce a message naming what to install
+  rather than a stack trace; both paths were exercised. `.gitattributes` now forces CRLF
+  on `*.bat`, since the repo default of `eol=lf` would have broken batch parsing on the
+  one platform that file exists for.
+- Restructured the README's entry points into three doors, easiest first: the launcher
+  script, Docker, then from source for development. The Docker example is pinned to a
+  real published tag, because `:latest` does not exist until the first release is tagged.
 - Corrected the ffmpeg scoping in the README: `.opus` does NOT need it. libsndfile 1.2.2
   supports Ogg Opus natively; the error came from reading `available_formats()`, which
   lists OGG but not OPUS because Opus is a subtype there rather than a format. Rechecked

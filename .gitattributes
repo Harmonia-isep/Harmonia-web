@@ -1,1 +1,7 @@
 * text=auto eol=lf
+
+# Windows batch files must keep CRLF. cmd.exe mis-parses multi-line blocks and
+# goto labels in a file with LF endings, so the launcher would break on the one
+# platform it exists for.
+*.bat text eol=crlf
+*.cmd text eol=crlf

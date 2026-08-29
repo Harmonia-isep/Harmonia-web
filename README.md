@@ -24,36 +24,37 @@ that proxy as the security boundary.
 It is also not a real-time tool. Analysis is a batch job of roughly two seconds
 per track, not something that runs live in a DJ set.
 
-## Quickstart
+## Getting started
 
-Requires **Python 3.11+** and **Node.js 20.19+ or 22.12+**. `ffmpeg` is optional:
-it is needed only for `.m4a` and `.aac`, because libsndfile handles `.mp3`,
-`.wav`, `.flac`, `.ogg` and `.opus` natively.
+Three ways in, easiest first. All of them end at <http://127.0.0.1:8000>.
+
+`ffmpeg` is optional in every case: it is needed only for `.m4a` and `.aac`,
+because libsndfile handles `.mp3`, `.wav`, `.flac`, `.ogg` and `.opus` natively.
+
+### 1. Just want to use it
+
+Download the repository ([zip](https://github.com/Harmonia-isep/Harmonia-web/archive/refs/heads/main.zip)
+or `git clone`), then run the launcher for your system:
 
 ```bash
-git clone https://github.com/Harmonia-isep/Harmonia-web.git
-cd Harmonia-web
-
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-
-pip install -e .
-alembic upgrade head
-
-(cd frontend && npm install && npm run build)
-
-python -m uvicorn --factory backend.main:create_app --host 127.0.0.1 --port 8000
+./run.sh          # macOS, Linux
 ```
 
-Open <http://127.0.0.1:8000>. One process serves both the interface and the API.
+```bat
+run.bat           :: Windows, or just double-click it
+```
 
-The database is a local SQLite file (`harmonia.db`) created by the migration
-step. Nothing else is required: no `.env`, no Postgres, no external service. Set
-`DATABASE_URL` if you would rather use Postgres.
+It creates a virtual environment, installs the dependencies, sets up the
+database, builds the interface, starts the server and opens your browser. The
+first run takes a few minutes, mostly installing scientific Python packages.
+**Every run after that starts in a couple of seconds**, because it skips
+whatever is already done.
 
-## Run with Docker
+You need **Python 3.11+** installed. Node.js 20.19+ or 22.12+ is needed only for
+the one-time interface build; the script tells you if either is missing, and
+what to install.
 
-A published image is available if you would rather not install Python and Node.
+### 2. Have Docker
 
 ```bash
 docker run -d --name harmonia \
@@ -66,7 +67,7 @@ docker run -d --name harmonia \
 That is a commit-pinned tag. A `:latest` tag arrives with the first tagged
 release; until then, images are published per commit as `sha-<short>`.
 
-Open <http://127.0.0.1:8000>. Then scan the library you mounted:
+Then scan the library you mounted:
 
 ```bash
 docker exec harmonia python -m backend.scan /music --analyze
@@ -86,9 +87,33 @@ Three things about that command are deliberate:
   artwork all live there, so they survive `docker rm` and upgrades. Migrations
   run automatically at container start.
 
-The image includes ffmpeg, so it handles every format the scanner accepts,
-including the `.m4a` and `.aac` files that need it. It is built for `linux/amd64`;
-arm64 is not published yet.
+The image includes ffmpeg, so it handles every format the scanner accepts. It is
+built for `linux/amd64`; arm64 is not published yet.
+
+### 3. Working on it
+
+```bash
+git clone https://github.com/Harmonia-isep/Harmonia-web.git
+cd Harmonia-web
+
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+pip install -e .
+alembic upgrade head
+
+(cd frontend && npm install && npm run build)
+
+python -m uvicorn --factory backend.main:create_app --host 127.0.0.1 --port 8000
+```
+
+One process serves both the interface and the API. The database is a local
+SQLite file (`harmonia.db`) created by the migration step. Nothing else is
+required: no `.env`, no Postgres, no external service. Set `DATABASE_URL` if you
+would rather use Postgres.
+
+See [Development](#development) for the test suite and the two-terminal setup
+with hot reload.
 
 ## Accuracy: what is measured, and what is not
 
