@@ -8,4 +8,13 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   build: { outDir: 'build' },
+  server: {
+    // Pinned to 3000 because the backend's DEFAULT_CORS_ORIGINS allows
+    // localhost:3000 (inherited from Create React App). Vite's own default is
+    // 5173, which the migration silently broke the split-origin dev flow on.
+    // strictPort makes a busy port fail loudly rather than sliding to 3001 and
+    // getting blocked by CORS again for a non-obvious reason.
+    port: 3000,
+    strictPort: true,
+  },
 })

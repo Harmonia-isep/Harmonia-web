@@ -133,6 +133,17 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   an environment that could not migrate. `pyproject.toml` plus `requirements.lock` cover
   both roles, and CI already installed from the lock. `eval/requirements.txt` is a
   separate, still-live file and was left alone.
+- Fixed the split-origin dev flow, broken since the Vite migration. The backend's
+  `DEFAULT_CORS_ORIGINS` allows `localhost:3000`, inherited from Create React App, but
+  Vite's dev server defaults to 5173 and `vite.config.js` set no port, so the documented
+  two-terminal dev setup was CORS-blocked out of the box. Nothing caught it because the
+  e2e suite uses the single-process same-origin path. Pinned the dev server to 3000 with
+  `strictPort: true`, so a busy port fails loudly instead of sliding to 3001 and being
+  blocked again for a non-obvious reason. Verified both directions: a preflight from
+  `localhost:5173` gets no `access-control-allow-origin` header (the browser blocks it)
+  while `localhost:3000` does, and a real browser run of the whole flow (Vite dev on 3000,
+  API on 8000) uploaded and analyzed a track over four cross-origin calls with no CORS
+  errors and no failed requests.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local
