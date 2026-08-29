@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Harmonia-isep/Harmonia-web/security/advisories/new
+    about: Report privately. Note that missing authentication is documented behaviour, not a vulnerability. Read SECURITY.md first.
+  - name: Accuracy questions
+    url: https://github.com/Harmonia-isep/Harmonia-web/blob/main/eval/baseline.md
+    about: Full measurements, per-profile comparisons and the negative results are documented in eval/baseline.md.

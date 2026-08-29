@@ -172,9 +172,13 @@ Per track, in order:
 7. **Mix points.** Intro end and outro start from a beat-synchronous energy
    envelope.
 
-Key profiles are implemented from the published papers (Krumhansl and Kessler
-1982, Temperley 2001, Faraldo et al. 2016), not copied from any GPL source,
-which is what keeps this MIT licensed.
+Key profiles are implemented from the published papers: Krumhansl and Kessler
+(1982), as tabulated in Krumhansl (1990); Temperley (1999), also in Temperley
+(2001); and Faraldo et al. (2016) for EDMA. The numbers are the published
+values; the correlation is implemented here independently, with no
+third-party key-detection code copied, which is what keeps this MIT licensed.
+Note that Krumhansl-Schmuckler names the classic key-finding *algorithm* that
+uses the Krumhansl-Kessler profiles, not the profiles themselves.
 
 ## Getting music in
 
@@ -208,7 +212,7 @@ backend/
   main.py      create_app() factory: all config read at call time
   scan.py      folder-scanning CLI
   storage.py   upload/artwork directory resolution
-  tests/       105 tests, including browser-driven end-to-end
+  tests/       unit, integration, acceptance, browser-driven end-to-end
 alembic/     migrations
 eval/        the accuracy harness (see below)
 ```
@@ -263,6 +267,19 @@ the manual fallback, along with the full scoring method and the dataset choices.
   interrupted run has to be restarted per track.
 - The beat grid is served but not drawn in the interface.
 - No transition detection.
+
+## Contributing
+
+Contributions are welcome. [`CONTRIBUTING.md`](CONTRIBUTING.md) has the setup,
+the working habits, and the one rule that matters most here: **do not claim what
+you have not measured.** If you change the DSP, run `eval/` and report the delta.
+Negative results are welcome and get documented rather than discarded; several
+already are.
+
+Please also read the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+For security reports, read [`SECURITY.md`](SECURITY.md) first. The absence of
+authentication is documented design, not a vulnerability.
 
 ## Origin and credits
 

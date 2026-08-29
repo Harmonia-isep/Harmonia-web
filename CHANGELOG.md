@@ -161,6 +161,34 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   say so before someone deploys it, and a runnable `eval/` section with the real costs of
   reproducing the table (817 MB download, about 1.7 GB on disk, roughly 20 minutes for a
   full 567-track run, measured at 1.85 s/track).
+- Corrected a citation error, found by review of the README. The plan credited the key
+  profiles to "Krumhansl-Schmuckler 1990", which conflates two things: Krumhansl-Schmuckler
+  is the name of the key-finding *algorithm*, while the profile vectors are Krumhansl and
+  Kessler (1982), tabulated in Krumhansl (1990). The code was already right:
+  `key_profiles.py` cites it correctly and its vectors are the canonical KK values, and
+  `eval/baseline.md` says "Krumhansl-Kessler" with no year error. Only
+  `HARMONIA_REBUILD_PLAN.md` was wrong, in two places, and the README now states the
+  distinction explicitly. Worth fixing precisely because that paragraph is the one making
+  the clean-room implementation claim that keeps the project MIT licensed.
+- Dropped the hardcoded test count from the README's layout block; it went stale every
+  phase.
+- Added the community files (Phase 7 step 4 and 5): `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md`, `CITATION.cff`, GitHub
+  issue forms and a pull request template. `SECURITY.md` states plainly that missing
+  authentication is documented design rather than a vulnerability, and scopes what is and
+  is not a real report. `CONTRIBUTING.md` leads with the rule that carries this project:
+  do not claim what you have not measured, run `eval/` for DSP changes, and expect
+  negative results to be kept rather than discarded. `CITATION.cff` credits the ISEP
+  origin and Prof. Ferreira's supervision, and cites the three key-profile papers.
+- Fixed a race in the smoke e2e, caught when it failed once in a full-suite run and
+  then passed three times in isolation. It was a defect in the test, not a flake to be
+  waited out and not the Phase 5 polling problem: the recommendations panel is gated on
+  `analysis &&`, and `selectTrack` sets the analysis BEFORE awaiting
+  `getRecommendations`, so `.recs-empty` is on screen transiently while that request is
+  in flight. The test read that transient state as the answer. It now waits for a real
+  `.rec-item` row and only interprets the empty state after that wait expires, which
+  also preserves the diagnostic message for a genuinely empty result. Five consecutive
+  full-suite runs pass.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local

@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest something Harmonia should do
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Harmonia is deliberately narrow: a single-user, local, offline tool.
+        Requests for hosting, multi-user support, accounts or cloud sync are
+        out of scope by design, not by omission. See "What this is not" in the
+        README.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that Harmonia makes hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like it to do
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - DSP or analysis accuracy
+        - Library, scanning or ingestion
+        - Playlists or recommendations
+        - Web interface
+        - Packaging, install or deployment
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: measurement
+    attributes:
+      label: How would we know it worked?
+      description: >-
+        For anything touching analysis accuracy, this matters. Is there ground
+        truth to measure against, or would this be a heuristic? See the accuracy
+        tiers in the README.

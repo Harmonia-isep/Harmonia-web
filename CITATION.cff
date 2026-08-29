@@ -1,0 +1,71 @@
+cff-version: 1.2.0
+message: "If you use Harmonia in academic work, please cite it as below."
+title: "Harmonia: local-first music analysis and harmonic mixing assistance"
+abstract: >-
+  Harmonia analyses a local music library with digital signal processing,
+  computing tempo, musical key, energy and danceability, and recommends
+  harmonically compatible tracks using the Camelot wheel. Key detection is
+  benchmarked against the GiantSteps+ EDM Key dataset with MIREX weighting;
+  the remaining descriptors are documented heuristics with no ground truth.
+  Harmonia began as a third-year LEI capstone project at the Instituto
+  Superior de Engenharia do Porto (ISEP), supervised by Prof. Carlos Ferreira,
+  and has since been rebuilt as a locally deployable open-source tool.
+type: software
+authors:
+  - family-names: Abdelkefi
+    given-names: Adam
+    affiliation: "Instituto Superior de Engenharia do Porto (ISEP)"
+  - family-names: Mezouri
+    given-names: Inas
+    affiliation: "Instituto Superior de Engenharia do Porto (ISEP)"
+repository-code: "https://github.com/Harmonia-isep/Harmonia-web"
+url: "https://github.com/Harmonia-isep/Harmonia-web"
+license: MIT
+version: 0.1.0
+keywords:
+  - music information retrieval
+  - key detection
+  - tempo estimation
+  - harmonic mixing
+  - Camelot wheel
+  - digital signal processing
+references:
+  - type: conference-paper
+    title: "Key Estimation in Electronic Dance Music"
+    authors:
+      - family-names: Faraldo
+        given-names: Angel
+      - family-names: "Gomez"
+        given-names: Emilia
+      - family-names: "Jorda"
+        given-names: Sergi
+      - family-names: Herrera
+        given-names: Perfecto
+    collection-title: "Advances in Information Retrieval (ECIR 2016), LNCS 9626"
+    start: 335
+    end: 347
+    year: 2016
+    notes: "Source of the EDMA key profiles used by default."
+  - type: book
+    title: "Cognitive Foundations of Musical Pitch"
+    authors:
+      - family-names: Krumhansl
+        given-names: "Carol L."
+    publisher:
+      name: "Oxford University Press"
+    year: 1990
+    notes: >-
+      Tabulates the Krumhansl and Kessler (1982) probe-tone key profiles
+      offered as the "ks" option.
+  - type: article
+    title: "What's key for key? The Krumhansl-Schmuckler key-finding algorithm reconsidered"
+    authors:
+      - family-names: Temperley
+        given-names: David
+    journal: "Music Perception"
+    volume: 17
+    issue: 1
+    start: 65
+    end: 100
+    year: 1999
+    notes: "Source of the Temperley key profiles offered as an option."

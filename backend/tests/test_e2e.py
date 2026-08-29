@@ -325,6 +325,7 @@ def smoke_server(tmp_path_factory):
 def test_smoke_ingest_analyze_recommend(smoke_server, page, tmp_path):
     """Ingest two tracks, analyze them, and see one recommend the other."""
     import httpx
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
     # Front door into the app.
     page.goto(smoke_server, wait_until="networkidle")
@@ -353,14 +354,24 @@ def test_smoke_ingest_analyze_recommend(smoke_server, page, tmp_path):
     page.locator(".track-item", has_text="SmokeE4").click()
 
     page.locator(".recs").wait_for(state="visible", timeout=60000)
-    if page.locator("p.recs-empty").count():
-        pytest.fail(
-            "recommendations came back empty: E4 and A4 are no longer both "
-            "within +/-5 BPM and Camelot compatible. Re-run the tone "
-            "measurement documented at SMOKE_TONES and choose a new pair."
-        )
 
+    # The panel is gated on `analysis &&`, and selectTrack sets the analysis
+    # BEFORE awaiting getRecommendations, so ".recs-empty" is on screen
+    # transiently while that request is still in flight. Treating it as the
+    # answer is a race: wait for a real row first, and only read the empty state
+    # once that wait has actually expired.
     recs = page.locator(".rec-item")
+    try:
+        recs.first.wait_for(state="visible", timeout=30000)
+    except PlaywrightTimeoutError:
+        if page.locator("p.recs-empty").count():
+            pytest.fail(
+                "recommendations came back empty: E4 and A4 are no longer both "
+                "within +/-5 BPM and Camelot compatible. Re-run the tone "
+                "measurement documented at SMOKE_TONES and choose a new pair."
+            )
+        pytest.fail("no recommendation row and no empty-state message appeared")
+
     assert recs.count() == 1, f"expected exactly one recommendation, got {recs.count()}"
     assert "SmokeA4" in recs.first.inner_text()
     assert "8A" in recs.first.locator(".rec-camelot").inner_text()

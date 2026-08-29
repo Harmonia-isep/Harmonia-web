@@ -53,7 +53,8 @@ Infrastructure choices are secondary to it.
    exposure requires an explicit `--host` flag that logs a warning.
 
 3. **License: MIT for the core.** Key profiles are implemented from published papers
-   (Krumhansl-Schmuckler 1990, Temperley 2001, Faraldo et al. 2016), not copied from
+   (Krumhansl & Kessler 1982 as tabulated in Krumhansl 1990, Temperley 1999/2001,
+   Faraldo et al. 2016), not copied from
    any AGPL source. If Essentia support is ever added it goes in a **separate**
    `harmonia-essentia` repo licensed AGPL-3.0, implementing the same protocols. The
    core repo never imports Essentia.
@@ -379,7 +380,7 @@ Then, in this order, re-running `eval/run` after each step:
    selection and the one-pitch-class binary major/minor templates with correlation of the
    mean chroma against all 24 rotations (12 tonics x major and minor) of weighted
    profiles. Return the best match plus a confidence score plus the runner-up. Start with
-   Krumhansl-Schmuckler (1990), then add Temperley (2001) and Faraldo et al. (2016) EDMA
+   Krumhansl-Kessler (1982), then add Temperley (1999) and Faraldo et al. (2016) EDMA
    profiles; benchmark all three against each other and pick the winner as default,
    keeping the others selectable. These are 12-element vectors from published papers;
    implement them, cite them, stay MIT. This is aimed straight at the parallel-mode
@@ -512,3 +513,11 @@ pip install -e . && alembic upgrade head` runs the whole thing offline.
    assertion. **If the smoke test proves flaky in practice, the fix is the jobs table and
    a real progress endpoint (Phase 5 steps 1 and 6), not more timeout tuning.** Widening
    the timeout would hide the problem rather than address it.
+
+   **First observed failure was NOT this (2026-08-29).** The smoke test failed once in
+   a full-suite run and passed in isolation. The cause was a race in the test itself:
+   the recommendations panel renders as soon as the analysis lands, while
+   `getRecommendations` is still in flight, so its empty state is briefly on screen and
+   the test read it as the result. Fixed by waiting for a recommendation row before
+   interpreting empty. Recorded here so this failure is not later miscounted as
+   evidence for the jobs-table argument above, which it is not.
