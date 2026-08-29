@@ -1,0 +1,24 @@
+# Build context hygiene: keep the image small and the build cache stable.
+.git
+.github
+.githooks
+**/node_modules
+frontend/build
+venv
+.venv
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+backend/tests
+conftest.py
+eval/datasets
+eval/results
+uploads
+harmonia.db
+*.db
+.env
+docs
+CHANGELOG.md
+HARMONIA_AUDIT.md
+HARMONIA_REBUILD_PLAN.md

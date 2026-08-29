@@ -180,6 +180,22 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   do not claim what you have not measured, run `eval/` for DSP changes, and expect
   negative results to be kept rather than discarded. `CITATION.cff` credits the ISEP
   origin and Prof. Ferreira's supervision, and cites the three key-profile papers.
+- Corrected the ffmpeg scoping in the README: `.opus` does NOT need it. libsndfile 1.2.2
+  supports Ogg Opus natively; the error came from reading `available_formats()`, which
+  lists OGG but not OPUS because Opus is a subtype there rather than a format. Rechecked
+  by generating a real file in each whitelisted format and decoding it: ffmpeg is needed
+  for `.m4a` and `.aac` only, two of the seven formats, not three.
+- Added a Dockerfile and a GHCR publish workflow (Phase 7 step 6). Multi-stage, so the
+  final image carries the built frontend but no Node; Debian slim rather than Alpine
+  because the numpy/scipy/numba stack ships glibc-only manylinux wheels and musl would
+  mean compiling LLVM. ffmpeg is installed, so the image handles every format the
+  scanner accepts. The database, uploads and artwork share one `/data` volume and
+  survive `docker rm`; migrations run at container start from an entrypoint that then
+  `exec`s uvicorn so signals reach it. Runs as a non-root uid 1000. The README documents
+  `-p 127.0.0.1:8000:8000` as the form to copy, not as an alternative, because the plain
+  `-p 8000:8000` would put an unauthenticated app on every interface. Published on
+  version tags plus `sha-<short>` only, with no moving `main` tag; pull requests build
+  and smoke-test without publishing. amd64 only; arm64 is a post-release item.
 - Fixed a race in the smoke e2e, caught when it failed once in a full-suite run and
   then passed three times in isolation. It was a defect in the test, not a flake to be
   waited out and not the Phase 5 polling problem: the recommendations panel is gated on

@@ -452,7 +452,16 @@ Then, in this order, re-running `eval/run` after each step:
    diagram, honest limitations section, documented descriptor formulas.
 4. `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, issue and PR templates.
 5. `CITATION.cff` crediting the ISEP origin and Prof. Ferreira's supervision.
-6. GHCR image published from CI.
+6. GHCR image published from CI. **Done.** Multi-stage Dockerfile (node:22-slim builds
+   the frontend, python:3.12-slim runs it, so no Node ships), Debian rather than Alpine
+   because the numpy/scipy/numba stack is glibc-only manylinux wheels. ffmpeg IS
+   installed: `apt-get install ffmpeg` declares a system dependency resolved from
+   Debian, which is not the redistribution the section 1 constraint was about, and it
+   makes the image cover every format the scanner accepts. Published only on version
+   tags plus `sha-<short>`; deliberately no moving `main` tag, which would be a footgun
+   for anyone pulling it. Pull requests build and smoke-test without publishing.
+   **Open: arm64.** amd64 only for now, because arm64 through QEMU roughly triples the
+   build; Apple Silicon users will want it, so it is a post-release item.
 7. Dependency lockfile (`uv.lock` or `requirements.lock`).
 
 **Cloud decommission complete (2026-08-29).** The Render service and the Neon

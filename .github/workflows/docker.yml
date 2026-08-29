@@ -1,0 +1,148 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  image:
+    name: build, smoke test, publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # No moving "main" tag on purpose: an image tag that changes on every
+      # commit is a footgun for anyone who pulls it. Version tags are stable
+      # and sha- tags give the same debuggability without the ambiguity.
+      # amd64 only for now; arm64 through QEMU roughly triples this build.
+      - name: Derive tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: latest=false
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      # Built once and loaded locally so the smoke test runs against exactly
+      # the image that would be published, before anything is published.
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: harmonia:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Report image size
+        run: |
+          echo "### Image size" >> "$GITHUB_STEP_SUMMARY"
+          docker image inspect harmonia:ci --format '{{.Size}}' \
+            | awk '{printf "compressed layers vary; on-disk uncompressed: %.0f MB\n", $1/1024/1024}' \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          docker history harmonia:ci --human --format '{{.Size}}\t{{.CreatedBy}}' \
+            | head -15 >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke test the image
+        run: |
+          set -e
+          docker run -d --name harmonia-smoke \
+            -p 127.0.0.1:8000:8000 \
+            -v harmonia-smoke-data:/data \
+            harmonia:ci
+
+          echo "waiting for the container to become healthy..."
+          for i in $(seq 1 60); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' harmonia-smoke 2>/dev/null || echo starting)
+            [ "$status" = "healthy" ] && break
+            if [ "$(docker inspect --format '{{.State.Running}}' harmonia-smoke)" != "true" ]; then
+              echo "container exited early:"; docker logs harmonia-smoke; exit 1
+            fi
+            sleep 2
+          done
+
+          echo "--- container logs ---"
+          docker logs harmonia-smoke
+
+          echo "--- migrations ran? ---"
+          docker logs harmonia-smoke 2>&1 | grep -q "running migrations" \
+            && echo "OK entrypoint ran migrations" || { echo "FAIL: no migration line"; exit 1; }
+
+          echo "--- endpoints ---"
+          for path in / /library /api/tracks/ /docs; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8000$path")
+            echo "  $path -> $code"
+            [ "$code" = "200" ] || { echo "FAIL: $path returned $code"; docker logs harmonia-smoke; exit 1; }
+          done
+
+          echo "--- the UI is actually served, not just the API ---"
+          curl -s http://127.0.0.1:8000/ | grep -q 'id="root"' \
+            && echo "OK SPA served" || { echo "FAIL: no SPA"; exit 1; }
+
+          echo "--- data landed on the volume, so it survives a restart ---"
+          docker exec harmonia-smoke sh -c 'test -f /data/harmonia.db' \
+            && echo "OK /data/harmonia.db exists" || { echo "FAIL: no db on the volume"; exit 1; }
+
+          echo "--- ffmpeg present (needed for .m4a and .aac) ---"
+          docker exec harmonia-smoke ffmpeg -version | head -1
+
+          echo "--- node did NOT ship (multi-stage worked) ---"
+          if docker exec harmonia-smoke sh -c 'command -v node' >/dev/null 2>&1; then
+            echo "FAIL: node is in the final image"; exit 1
+          fi
+          echo "OK no node in the final image"
+
+          echo "--- runs as non-root ---"
+          docker exec harmonia-smoke id -un
+
+          echo "--- restart keeps the data ---"
+          docker restart harmonia-smoke >/dev/null
+          sleep 12
+          docker exec harmonia-smoke sh -c 'test -f /data/harmonia.db' \
+            && echo "OK data survived a restart" || { echo "FAIL: data lost"; exit 1; }
+
+          docker rm -f harmonia-smoke >/dev/null
+          docker volume rm harmonia-smoke-data >/dev/null
+
+      # Only after the smoke test passes, and never on a pull request.
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

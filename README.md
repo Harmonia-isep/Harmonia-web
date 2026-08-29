@@ -51,6 +51,42 @@ The database is a local SQLite file (`harmonia.db`) created by the migration
 step. Nothing else is required: no `.env`, no Postgres, no external service. Set
 `DATABASE_URL` if you would rather use Postgres.
 
+## Run with Docker
+
+A published image is available if you would rather not install Python and Node.
+
+```bash
+docker run -d --name harmonia \
+  -p 127.0.0.1:8000:8000 \
+  -v "$HOME/Music:/music:ro" \
+  -v harmonia-data:/data \
+  ghcr.io/harmonia-isep/harmonia-web:latest
+```
+
+Open <http://127.0.0.1:8000>. Then scan the library you mounted:
+
+```bash
+docker exec harmonia python -m backend.scan /music --analyze
+```
+
+Three things about that command are deliberate:
+
+- **`-p 127.0.0.1:8000:8000`, not `-p 8000:8000`.** The plain form publishes on
+  every interface, which would put an unauthenticated app on your whole network.
+  Harmonia has no login by design (see [What this is not](#what-this-is-not)), so
+  the binding is the only thing keeping it local. Change this only if you have
+  read [`SECURITY.md`](SECURITY.md) and put a proxy in front.
+- **Your music mounts read-only** (`:ro`). Scanning registers files in place and
+  never writes to them, so the container has no reason to hold write access to
+  your library.
+- **`/data` is a named volume.** The SQLite database, uploads and extracted
+  artwork all live there, so they survive `docker rm` and upgrades. Migrations
+  run automatically at container start.
+
+The image includes ffmpeg, so it handles every format the scanner accepts,
+including the `.m4a` and `.aac` files that need it. It is built for `linux/amd64`;
+arm64 is not published yet.
+
 ## Accuracy: what is measured, and what is not
 
 Harmonia reports several numbers per track. They are **not equally trustworthy**,
