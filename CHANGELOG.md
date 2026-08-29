@@ -6,6 +6,27 @@ academic submission is preserved under the `v0.1.0-academic` tag.
 
 ## Unreleased
 
+### Phase 7: open-source packaging (in progress)
+- Migrated the frontend from Create React App to Vite. `react-scripts` 5.0.1 could not
+  build against the React 19 already in `package.json`, and it is unmaintained. Build
+  output stays in `build/`, so the FastAPI `DEFAULT_FRONTEND_DIR` and the Playwright
+  fixture are unchanged; the 11 JSX-bearing sources became `.jsx`, and the client env var
+  moved from `REACT_APP_API_URL` to `VITE_API_URL`.
+- Node 22. `react-router-dom` had drifted to 7.18.2, which requires Node >=20, while the
+  development runtime was 18.19.1 (end of life since April 2025). Rather than pin the
+  router back onto an unsupported runtime, declared `"engines": { "node": ">=20" }` in
+  `frontend/package.json` and moved development to Node 22 (Active LTS). Pinning down
+  would also have dead-ended the vite upgrade, which needs Node 20 as well.
+- Added a browser-driven `e2e` CI job (Node pinned to 22, Playwright chromium), separate
+  from the default job, which has no browser. It wipes `node_modules` and `build` first,
+  so the e2e can never pass against a stale bundle.
+- Fixed two bugs in the e2e build fixture. It set the CRA-era `REACT_APP_API_URL`, which
+  Vite ignores, so the bundle under test silently fell back to `http://localhost:8000`
+  instead of the test server; it now sets `VITE_API_URL`. And it returned early whenever
+  `build/` existed, so a source edit could pass e2e without ever being compiled. It now
+  rebuilds when any build input is newer than the output, and records the API base it
+  built with, since that is a build input an mtime check cannot see.
+
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local
   audio files into the library **in place** (no copy), unlike the web upload. Dedup and

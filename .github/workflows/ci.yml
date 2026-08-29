@@ -68,3 +68,43 @@ jobs:
 
       - name: Pytest
         run: pytest --cov=backend -m "not e2e"
+
+  # Browser-driven e2e, kept out of the default job because that one has no
+  # browser. Node is pinned here so the frontend toolchain cannot drift away
+  # from the "engines" floor in frontend/package.json without CI noticing.
+  e2e:
+    name: e2e (browser)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Install from the lock, then add playwright on top: it is deliberately
+      # not in requirements.lock, which covers the browserless default job.
+      - name: Install (from lock, plus playwright)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock
+          pip install -e . --no-deps
+          pip install "playwright>=1.40"
+          playwright install --with-deps chromium
+
+      # From clean, so e2e can never run against a stale or cached bundle.
+      # The test fixture itself runs `npm run build`.
+      - name: Frontend deps (clean)
+        working-directory: frontend
+        run: |
+          rm -rf node_modules build
+          npm ci
+
+      - name: Pytest (e2e only)
+        run: pytest -m e2e

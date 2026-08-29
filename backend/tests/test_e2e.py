@@ -39,16 +39,60 @@ def _wait_for_port(port, timeout=30.0):
     return False
 
 
+# Everything Vite reads as build input. If any is newer than the built
+# index.html, the bundle on disk is stale and must be rebuilt.
+_BUILD_INPUTS = (
+    "src",
+    "public",
+    "index.html",
+    "vite.config.js",
+    "package.json",
+    "package-lock.json",
+)
+_STAMP = os.path.join(_BUILD_DIR, ".e2e-build-stamp")
+
+
+def _newest_input_mtime():
+    """Newest mtime across every Vite build input."""
+    newest = 0.0
+    for rel in _BUILD_INPUTS:
+        path = os.path.join(_FRONTEND, rel)
+        if os.path.isfile(path):
+            newest = max(newest, os.path.getmtime(path))
+            continue
+        for root, _dirs, files in os.walk(path):
+            newest = max(newest, os.path.getmtime(root))
+            for name in files:
+                newest = max(newest, os.path.getmtime(os.path.join(root, name)))
+    return newest
+
+
 def _ensure_build():
-    """Build the React app if needed. Same-origin, so its API base is this server."""
-    if os.path.isfile(os.path.join(_BUILD_DIR, "index.html")):
-        return
-    env = dict(os.environ, CI="false", REACT_APP_API_URL=BASE)
+    """Build the React app unless the bundle on disk is already current.
+
+    Current means the output exists, is newer than every build input, and was
+    built with the same VITE_API_URL. Returning early on the mere existence of
+    build/ would silently test a stale bundle, letting a frontend change pass
+    e2e without ever having been compiled.
+    """
+    built = os.path.join(_BUILD_DIR, "index.html")
+    stamp = "VITE_API_URL=" + BASE
+    if os.path.isfile(built) and os.path.isfile(_STAMP):
+        with open(_STAMP, encoding="utf-8") as fh:
+            same_env = fh.read() == stamp
+        if same_env and os.path.getmtime(built) >= _newest_input_mtime():
+            return
+    # Vite exposes only VITE_-prefixed vars to client code. The CRA-era
+    # REACT_APP_API_URL was silently ignored after the Vite migration.
+    env = dict(os.environ, CI="false", VITE_API_URL=BASE)
     subprocess.run(
         ["npm", "run", "build"],
         cwd=_FRONTEND, env=env, check=True,
         capture_output=True, text=True, timeout=600,
     )
+    # Written after the build: vite empties outDir, which would remove it.
+    with open(_STAMP, "w", encoding="utf-8") as fh:
+        fh.write(stamp)
 
 
 @pytest.fixture(scope="session")
