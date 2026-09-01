@@ -7,6 +7,7 @@
 # fixture if frontend/build is missing.
 
 import os
+import re
 import socket
 import subprocess
 import threading
@@ -51,11 +52,22 @@ _BUILD_INPUTS = (
 )
 _STAMP = os.path.join(_BUILD_DIR, ".e2e-build-stamp")
 
-# Build the bundle same-origin (relative URLs) rather than baking in an absolute
-# host:port. Every e2e server serves the API and the UI together, so a relative
-# base is correct, and it lets a second server on a different port reuse this
-# one build instead of needing its own.
-_E2E_API_BASE = ""
+# Build the bundle exactly as run.sh and run.bat do: with VITE_API_URL UNSET,
+# not set to an empty string.
+#
+# This matters more than it looks. Both produce a same-origin bundle today, but
+# only the unset form exercises api.js's own default, and the default is what
+# ships. When this fixture set VITE_API_URL="" while the launchers set nothing,
+# the suite tested a bundle that differed from the shipped one by exactly one
+# value, and that one value was a live bug: `'' ?? fallback` is '', but
+# `undefined ?? fallback` was 'http://localhost:8000'. The launchers serve on
+# 127.0.0.1, so every API call from the shipped bundle was cross-origin, the
+# browser discarded responses the server had already processed, and a retried
+# create silently made duplicates. The e2e passed throughout.
+#
+# So: do not "simplify" this to VITE_API_URL="". The tested artifact has to be
+# the shipped artifact, which means the default must stay on this path.
+_E2E_BUILD_ENV_DESC = "VITE_API_URL-unset-same-origin"
 
 
 def _newest_input_mtime():
@@ -82,7 +94,7 @@ def _ensure_build():
     e2e without ever having been compiled.
     """
     built = os.path.join(_BUILD_DIR, "index.html")
-    stamp = "VITE_API_URL=" + _E2E_API_BASE
+    stamp = _E2E_BUILD_ENV_DESC
     if os.path.isfile(built) and os.path.isfile(_STAMP):
         with open(_STAMP, encoding="utf-8") as fh:
             same_env = fh.read() == stamp
@@ -90,7 +102,13 @@ def _ensure_build():
             return
     # Vite exposes only VITE_-prefixed vars to client code. The CRA-era
     # REACT_APP_API_URL was silently ignored after the Vite migration.
-    env = dict(os.environ, CI="false", VITE_API_URL=_E2E_API_BASE)
+    #
+    # VITE_API_URL is removed from the environment rather than set to '', so
+    # this build is byte-identical to what the launchers produce. A developer
+    # with VITE_API_URL exported in their shell would otherwise build, and test,
+    # a different bundle than they ship.
+    env = dict(os.environ, CI="false")
+    env.pop("VITE_API_URL", None)
     subprocess.run(
         ["npm", "run", "build"],
         cwd=_FRONTEND, env=env, check=True,
@@ -99,6 +117,44 @@ def _ensure_build():
     # Written after the build: vite empties outDir, which would remove it.
     with open(_STAMP, "w", encoding="utf-8") as fh:
         fh.write(stamp)
+
+
+def test_shipped_bundle_makes_no_absolute_api_calls():
+    """The bundle must call the API on whatever origin served the page.
+
+    This guards the regression that made the documented quickstart unusable.
+    api.js defaulted to an absolute http://localhost:8000; the launchers serve
+    on 127.0.0.1, which a browser treats as a different origin. Every call was
+    cross-origin, so the server processed each request and answered 200 while
+    the browser discarded the response. Creates looked like failures, were
+    retried, and silently made duplicates.
+
+    Widening CORS_ORIGINS would not have fixed it: an absolute default pins the
+    port too, and HARMONIA_PORT can change it. Only a relative base is correct.
+    """
+    _ensure_build()
+    # Matches a loopback origin carrying an explicit port, which is the shape
+    # every version of this bug takes. Deliberately NOT a bare "http://localhost"
+    # match: axios ships its own port-less `window.location.href ||
+    # 'http://localhost'` fallback for non-browser environments, and asserting on
+    # that would fail against a perfectly correct bundle.
+    hardcoded_origin = re.compile(r"https?://(?:localhost|127\.0\.0\.1|0\.0\.0\.0):\d+")
+
+    assets = os.path.join(_BUILD_DIR, "assets")
+    offenders = []
+    for name in sorted(os.listdir(assets)):
+        if not name.endswith(".js"):
+            continue
+        with open(os.path.join(assets, name), encoding="utf-8") as fh:
+            found = set(hardcoded_origin.findall(fh.read()))
+        offenders += [f"{name} contains {origin}" for origin in sorted(found)]
+
+    assert not offenders, (
+        "The built bundle hardcodes an API origin: "
+        + "; ".join(offenders)
+        + ". It must use a relative base so it follows the address the page was "
+        "opened on. Check the VITE_API_URL default in frontend/src/api.js."
+    )
 
 
 @pytest.fixture(scope="session")

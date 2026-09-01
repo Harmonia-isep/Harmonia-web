@@ -13,6 +13,17 @@ PORT="${HARMONIA_PORT:-8000}"
 VENV=".venv"
 STAMP="$VENV/.harmonia-deps"
 
+# The frontend bundle is built with VITE_API_URL unset, so it calls the API on
+# whatever origin the page was served from. This stamp records that, so a bundle
+# left behind by an older launcher (which baked in http://localhost:8000 and was
+# therefore unusable at the 127.0.0.1 address this script prints) gets rebuilt
+# instead of skipped.
+FRONTEND_BUILD="frontend/build"
+FRONTEND_STAMP="$FRONTEND_BUILD/.harmonia-frontend"
+# No angle brackets or quotes in this value: run.bat writes the same stamp with
+# `echo`, where they would be redirection operators.
+FRONTEND_STAMP_WANT="VITE_API_URL-unset-same-origin"
+
 info()  { printf '\033[1;36m==>\033[0m %s\n' "$1"; }
 ok()    { printf '\033[1;32m  ok\033[0m %s\n' "$1"; }
 die()   { printf '\033[1;31m\nError: %s\033[0m\n\n' "$1" >&2; exit 1; }
@@ -116,9 +127,12 @@ fi
 ok "database ready"
 
 # ---------------------------------------------------------------------------
-# Frontend. Built once. Delete frontend/build to force a rebuild.
+# Frontend. Built once, and rebuilt if the bundle on disk was not built the way
+# this script builds it. Delete frontend/build to force a rebuild.
 # ---------------------------------------------------------------------------
-if [ -f "frontend/build/index.html" ]; then
+if [ -f "$FRONTEND_BUILD/index.html" ] \
+   && [ -f "$FRONTEND_STAMP" ] \
+   && [ "$(cat "$FRONTEND_STAMP")" = "$FRONTEND_STAMP_WANT" ]; then
   ok "frontend already built"
 else
   if ! command -v node >/dev/null 2>&1; then
@@ -149,10 +163,17 @@ Harmonia needs Node.js 20.19+ or 22.12+.
   fi
 
   info "Building the web interface (first run only)"
-  ( cd frontend && npm install && npm run build ) \
+  # VITE_API_URL is explicitly unset rather than set to an empty string, so the
+  # bundle that ships is the one produced by api.js's own default. That keeps
+  # the default on a tested path: the e2e builds exactly this way, so a
+  # regression back to an absolute API origin fails the suite instead of only
+  # breaking users.
+  ( cd frontend && npm install && env -u VITE_API_URL npm run build ) \
     || die "Building the web interface failed. The output above says why."
-  [ -f "frontend/build/index.html" ] \
-    || die "The build reported success but produced no frontend/build/index.html."
+  [ -f "$FRONTEND_BUILD/index.html" ] \
+    || die "The build reported success but produced no $FRONTEND_BUILD/index.html."
+  # Written after the build: vite empties outDir, which would remove it.
+  printf '%s' "$FRONTEND_STAMP_WANT" > "$FRONTEND_STAMP"
   ok "built"
 fi
 

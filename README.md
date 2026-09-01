@@ -314,12 +314,16 @@ pytest                       # everything, needs: pip install playwright && play
 ruff check .
 ```
 
-Two-terminal split-origin development, with hot reload:
+Two-terminal development, with hot reload:
 
 ```bash
 python -m uvicorn --factory backend.main:create_app --reload --host 127.0.0.1 --port 8000
-cd frontend && npm run dev   # binds port 3000, which the backend's CORS allowlist expects
+cd frontend && npm run dev   # binds port 3000 and proxies /api to the backend
 ```
+
+The dev server proxies `/api` to port 8000 (see `frontend/vite.config.js`), so
+the browser talks to one origin and no `VITE_API_URL` or CORS setup is needed.
+Set `VITE_API_URL` only when the backend really is on another host.
 
 ## Reproducing the numbers
 

@@ -1,10 +1,21 @@
 import axios from 'axios';
 
-// Where the backend lives. Set via VITE_API_URL at build time. An explicitly
-// empty value means same-origin (the single-process build serves the API and
-// the UI together), so use ?? rather than ||: '' is a meaningful value here,
-// not a missing one. Unset still falls back to the split-origin dev backend.
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+// Where the backend lives. Same-origin by default. Every shipped path (the
+// launchers, Docker, the e2e) serves the API and the UI from one process, so a
+// relative base is correct for all of them, and it follows whatever host and
+// port the page was actually opened on instead of hardcoding one.
+//
+// This used to default to 'http://localhost:8000'. The launchers serve on
+// 127.0.0.1, which a browser treats as a different origin, so every call was
+// cross-origin: the server processed the request and returned 200 while the
+// browser discarded the response. Creates appeared to fail and were retried,
+// making duplicates. Note that a hardcoded default cannot be repaired by
+// widening the CORS allowlist, because it pins the port too, and HARMONIA_PORT
+// can change it.
+//
+// Split-origin development sets VITE_API_URL explicitly. `??` stays, because ''
+// is a meaningful value here, not a missing one.
+const BASE = import.meta.env.VITE_API_URL ?? '';
 
 const API = axios.create({ baseURL: `${BASE}/api` });
 

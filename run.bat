@@ -29,6 +29,16 @@ set "ALEMBIC=%VENV%\Scripts\alembic.exe"
 set "UVICORN=%VENV%\Scripts\uvicorn.exe"
 set "TMPOUT=%TEMP%\harmonia-launcher-%RANDOM%%RANDOM%.tmp"
 
+REM The frontend bundle is built with VITE_API_URL unset, so it calls the API on
+REM whatever origin the page was served from. This stamp records that, so a
+REM bundle left behind by an older launcher (which baked in
+REM http://localhost:8000 and was therefore unusable at the 127.0.0.1 address
+REM this script prints) gets rebuilt instead of skipped. The value has no angle
+REM brackets or quotes, because `echo` would read them as redirection.
+set "FRONTEND_BUILD=frontend\build"
+set "FRONTEND_STAMP=%FRONTEND_BUILD%\.harmonia-frontend"
+set "FRONTEND_WANT=VITE_API_URL-unset-same-origin"
+
 REM ---------------------------------------------------------------------------
 REM Find Python. The py launcher is preferred, since it is what the python.org
 REM installer provides and it resolves versions properly.
@@ -129,10 +139,18 @@ if %ERRORLEVEL% NEQ 0 goto :alembic_failed
 echo   ok database ready
 
 REM ---------------------------------------------------------------------------
-REM Frontend. Built once. Delete frontend\build to force a rebuild.
+REM Frontend. Built once, and rebuilt if the bundle on disk was not built the way
+REM this script builds it. Delete frontend\build to force a rebuild.
 REM ---------------------------------------------------------------------------
-if exist "frontend\build\index.html" goto :frontend_ready
+if not exist "%FRONTEND_BUILD%\index.html" goto :build_frontend
+if not exist "%FRONTEND_STAMP%" goto :build_frontend
+set "FSTAMP="
+set /p FSTAMP=<"%FRONTEND_STAMP%"
+if not "%FSTAMP%"=="%FRONTEND_WANT%" goto :build_frontend
+echo   ok frontend already built
+goto :serve
 
+:build_frontend
 where npm >nul 2>&1
 if %ERRORLEVEL% NEQ 0 goto :no_node
 where node >nul 2>&1
@@ -144,6 +162,13 @@ node -e "const v=process.versions.node.split('.').map(Number);process.exit((v[0]
 if %ERRORLEVEL% NEQ 0 goto :old_node
 
 echo ==^> Building the web interface ^(first run only^)
+REM VITE_API_URL is explicitly cleared rather than set to an empty string, so
+REM the bundle that ships is the one produced by api.js's own default. That
+REM keeps the default on a tested path: the e2e builds exactly this way, so a
+REM regression back to an absolute API origin fails the suite instead of only
+REM breaking users. `set "VAR="` removes the variable, and setlocal keeps that
+REM local to this script.
+set "VITE_API_URL="
 pushd frontend
 if %ERRORLEVEL% NEQ 0 goto :build_failed
 call npm install
@@ -151,12 +176,11 @@ if %ERRORLEVEL% NEQ 0 goto :build_failed_in_frontend
 call npm run build
 if %ERRORLEVEL% NEQ 0 goto :build_failed_in_frontend
 popd
-if not exist "frontend\build\index.html" goto :build_failed
+if not exist "%FRONTEND_BUILD%\index.html" goto :build_failed
+REM Written after the build: vite empties outDir, which would remove it.
+>"%FRONTEND_STAMP%" echo %FRONTEND_WANT%
+if %ERRORLEVEL% NEQ 0 goto :build_failed
 echo   ok built
-goto :serve
-
-:frontend_ready
-echo   ok frontend already built
 
 REM ---------------------------------------------------------------------------
 REM Open the browser, then start the server in this window.

@@ -280,6 +280,46 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   terminal on current Windows and will not run a program from the current directory, so
   the documented `run.bat` fails there with "not recognized" and needs `.\run.bat`. Both
   are now shown, labelled by shell, with double-clicking still noted.
+- Fixed the app being unusable through its own documented quickstart. Every API call
+  from the browser reported "Network Error" while the server logged 200, and retrying a
+  create silently made duplicates. `frontend/src/api.js` defaulted to an absolute
+  `http://localhost:8000` when `VITE_API_URL` was unset, which is exactly how the
+  launchers build it, while the launchers serve on and print `127.0.0.1`. A browser
+  treats those as different origins, so every call was cross-origin, and
+  `DEFAULT_CORS_ORIGINS` only allows port 3000. The affected calls are all CORS *simple*
+  requests (`GET`, and `POST` with either no body or `multipart/form-data`), so no
+  preflight gated them: the request was sent, the server executed it and returned 200,
+  and only the response was withheld from the page. `DELETE` is not a simple method, so
+  playlist and track removal were preflighted, rejected with `400 Disallowed CORS
+  origin`, and never reached the server at all. Creates therefore succeeded invisibly
+  while deletes failed completely.
+- The API base now defaults to same-origin (`?? ''`, a relative `/api`). Widening the
+  CORS allowlist would not have been a fix: an absolute default pins the port as well as
+  the host, so `HARMONIA_PORT=8080` would still have been broken with `127.0.0.1:8000`
+  allowlisted. A relative base follows whatever address the page was opened on.
+- `vite.config.js` now proxies `/api` to the backend on port 8000. The split-origin dev
+  flow previously worked *only* because of the bad default plus the port 3000 allowlist,
+  so removing the default would have broken it. With the proxy, development is
+  same-origin too, needs no `VITE_API_URL`, and involves no CORS.
+  `DEFAULT_CORS_ORIGINS` stays but is no longer load-bearing on any path.
+- Both launchers now clear `VITE_API_URL` before building and record a stamp in
+  `frontend/build/.harmonia-frontend`. The stamp matters for anyone who already ran a
+  launcher: the build step is skipped when `frontend/build/index.html` exists, so an
+  upgrade would otherwise keep serving the broken bundle forever. A missing or
+  mismatched stamp forces a rebuild.
+- Closed the test gap that let this ship. The e2e already served at `127.0.0.1` and
+  already exercised `POST` (the upload smoke test), and still passed, because
+  `_ensure_build` built with `VITE_API_URL=""` while the launchers set nothing at all.
+  `'' ?? fallback` is `''`, but `undefined ?? fallback` was the absolute URL, so the
+  suite tested a bundle that differed from the shipped one by exactly the bug. The
+  fixture now removes `VITE_API_URL` from the environment instead of setting it empty,
+  making the tested artifact the shipped artifact and putting api.js's default back on a
+  tested path. Added `test_shipped_bundle_makes_no_absolute_api_calls`, which asserts the
+  built bundle contains no `http://localhost` or `http://127.0.0.1`.
+- `frontend/.env.example` no longer documents `VITE_API_URL=http://localhost:8000` as the
+  normal setting, since that value is what broke the launcher path. It now says to leave
+  it unset unless the backend is genuinely on another host. README's two-terminal section
+  documents the proxy instead of the CORS allowlist.
 - CLAUDE.md: added a rule to merge fixes forward to `main` in the same session. `main` is
   the default branch and the one the README tells people to clone, so a fix that stops at
   `develop` is not shipped. The rule exists because the `run.bat` rewrite sat on `develop`
