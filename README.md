@@ -41,8 +41,17 @@ or `git clone`), then run the launcher for your system:
 ```
 
 ```bat
-run.bat           :: Windows, or just double-click it
+run.bat           :: Windows, Command Prompt
 ```
+
+```powershell
+.\run.bat         # Windows, PowerShell
+```
+
+On Windows you can also just double-click `run.bat` in Explorer. If you are
+typing it, note that PowerShell is the default terminal on current Windows and
+it will not run a program from the current directory without the leading `.\`,
+so plain `run.bat` there fails with "not recognized".
 
 It creates a virtual environment, installs the dependencies, sets up the
 database, builds the interface, starts the server and opens your browser. The

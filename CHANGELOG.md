@@ -276,6 +276,14 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   clone after the fix and both work, but the timings were not measured cleanly and no
   replacement figures are given here rather than invent them. If a number is wanted, it
   needs a deliberate measurement on a stated machine.
+- README: gave the Windows launcher in both shell forms. PowerShell is the default
+  terminal on current Windows and will not run a program from the current directory, so
+  the documented `run.bat` fails there with "not recognized" and needs `.\run.bat`. Both
+  are now shown, labelled by shell, with double-clicking still noted.
+- CLAUDE.md: added a rule to merge fixes forward to `main` in the same session. `main` is
+  the default branch and the one the README tells people to clone, so a fix that stops at
+  `develop` is not shipped. The rule exists because the `run.bat` rewrite sat on `develop`
+  while `main` kept serving the broken launcher to anyone cloning.
 - README: noted that OneDrive, Dropbox and similar syncing folders cause file-locking
   failures partway through the first run, because a virtual environment is thousands of
   small files being written while the sync client tries to upload them. Added the related

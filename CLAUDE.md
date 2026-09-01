@@ -6,6 +6,21 @@ Reference this file and HARMONIA_REBUILD_PLAN.md at the start of each session.
 Never add a `Co-Authored-By` trailer or any generated-with attribution to commit
 messages or PR descriptions.
 
+### Merge fixes forward to main in the same session
+`main` is the default branch, and it is what the README tells people to clone. A
+fix that only reaches `develop` is not shipped: anyone cloning in the meantime
+still gets the broken version.
+
+So after any commit that fixes something a user would hit from a fresh clone
+(the launchers, install steps, migrations, the README instructions themselves),
+merge it to `main` and push in the same session:
+
+    git checkout main && git merge --ff-only develop && git push origin main
+    git checkout develop
+
+Do not leave that for later. This rule exists because the `run.bat` rewrite sat
+on `develop` while `main` kept serving the broken launcher.
+
 ## Working agreement (from HARMONIA_REBUILD_PLAN.md section 3)
 - Confirm the approach before implementing. Propose the change, wait for agreement,
   then write code. Do not batch multiple phases into one commit.
