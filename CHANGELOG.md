@@ -333,6 +333,12 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   `.venv\Lib\site-packages`; and a OneDrive folder locks files mid-install. The syncing
   warning in the quickstart is now a short pointer to that section rather than a
   duplicate of it.
+- Tagged `v1.0.0` and pointed the README's Docker example at `:latest`. The tag build
+  published `1.0.0`, `1.0`, `latest` and `sha-4c93d5b`, all on digest
+  `sha256:742ec1b8`, confirmed from the workflow run's own tag list rather than assumed.
+  The example was pinned to `sha-dc3f709` only because no release existed yet; it now
+  shows `:latest`, with `:1.0.0` and `:1.0` named as the pins to use instead and
+  `sha-<short>` as the thing to quote in a bug report.
 - CLAUDE.md: added a rule to merge fixes forward to `main` in the same session. `main` is
   the default branch and the one the README tells people to clone, so a fix that stops at
   `develop` is not shipped. The rule exists because the `run.bat` rewrite sat on `develop`

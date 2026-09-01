@@ -76,11 +76,13 @@ docker run -d --name harmonia \
   -p 127.0.0.1:8000:8000 \
   -v "$HOME/Music:/music:ro" \
   -v harmonia-data:/data \
-  ghcr.io/harmonia-isep/harmonia-web:sha-dc3f709
+  ghcr.io/harmonia-isep/harmonia-web:latest
 ```
 
-That is a commit-pinned tag. A `:latest` tag arrives with the first tagged
-release; until then, images are published per commit as `sha-<short>`.
+`:latest` tracks the newest release. Pin it if you would rather not move:
+`:1.0.0` is exactly this release, and `:1.0` follows patch releases only. Every
+commit on `main` is also published as `sha-<short>`, which is what to quote in a
+bug report.
 
 Then scan the library you mounted:
 
