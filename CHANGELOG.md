@@ -320,6 +320,19 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   normal setting, since that value is what broke the launcher path. It now says to leave
   it unset unless the backend is genuinely on another host. README's two-terminal section
   documents the proxy instead of the CORS allowlist.
+- `run.bat` is verified on Windows. It shipped unexecuted, failed on its first real run,
+  was rewritten, and has now been run end to end from a fresh clone of `main` at
+  `f004a85`: upload works, playlist delete works, and a second run correctly skipped the
+  frontend build, so the stamp block behaves. The standing note that a full Windows
+  first-run install remained unverified no longer applies, and the plan's Phase 7 records
+  both launchers as verified.
+- README: added a "Windows notes" section for the papercuts hit while testing it. None
+  are Harmonia bugs, but each costs a real user time: PowerShell needs `.\run.bat`
+  because it will not run a program from the current directory; Python 3.10 is rejected
+  by the launcher's version gate; a long clone path makes pip fail inside
+  `.venv\Lib\site-packages`; and a OneDrive folder locks files mid-install. The syncing
+  warning in the quickstart is now a short pointer to that section rather than a
+  duplicate of it.
 - CLAUDE.md: added a rule to merge fixes forward to `main` in the same session. `main` is
   the default branch and the one the README tells people to clone, so a fix that stops at
   `develop` is not shipped. The rule exists because the `run.bat` rewrite sat on `develop`

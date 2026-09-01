@@ -463,6 +463,18 @@ Then, in this order, re-running `eval/run` after each step:
    **Open: arm64.** amd64 only for now, because arm64 through QEMU roughly triples the
    build; Apple Silicon users will want it, so it is a post-release item.
 7. Dependency lockfile (`uv.lock` or `requirements.lock`).
+8. Launcher scripts for people who do not want a terminal session. **Done, and now
+   verified on both platforms.** `run.sh` was verified from a fresh clone of `main`,
+   cold and warm, serving 200 on `/`, `/library` and `/api/tracks/`. `run.bat` was
+   verified end to end on Windows from a fresh clone of `main` at `f004a85`: upload
+   works, playlist delete works, and a second run correctly skipped the frontend build,
+   so the build stamp behaves. Both were broken before that, and none of it was caught
+   by CI: `run.bat` shipped unexecuted and had a `for /f` quoting failure that reported
+   success while installing nothing, `run.sh` was committed without its executable bit
+   so `./run.sh` failed on any fresh clone, and the frontend defaulted to an absolute
+   API origin that made the whole app unusable through the documented quickstart. See
+   the CHANGELOG for each. The lesson worth carrying: the launcher path is the one the
+   README tells strangers to use, and it had no test until this phase.
 
 **Cloud decommission complete (2026-08-29).** The Render service and the Neon
 database were both deleted; the Render URL now 404s at the edge. `develop` was

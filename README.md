@@ -63,20 +63,11 @@ You need **Python 3.11+** installed. Node.js 20.19+ or 22.12+ is needed only for
 the one-time interface build; the script tells you if either is missing, and
 what to install.
 
-> **Put the folder somewhere local, not in OneDrive.** A virtual environment is
-> thousands of small files, and a syncing client (OneDrive, Dropbox, Google
-> Drive, iCloud) will try to upload them while they are being written. It can
-> hold a file open at the wrong moment, which shows up as a permission error or
-> a half-created environment partway through the first run. On Windows,
-> `%USERPROFILE%\Harmonia-web` is a safe place. If you have already hit this,
-> move the folder, delete `.venv`, and run the launcher again.
->
-> A short path helps for a second reason. Unless long paths are enabled, Windows
-> caps a full path at 260 characters, and some of the files installed inside
-> `.venv` are deeply nested. Installing into a folder that is already far down a
-> long path fails partway with `Could not install packages due to an OSError`
-> naming a file inside `.venv\Lib\site-packages`. Keeping the project near the
-> root of your user folder leaves enough room.
+> **Do not put the project in a syncing folder** (OneDrive, Dropbox, Google
+> Drive, iCloud). A virtual environment is thousands of small files, and the
+> sync client will hold one open at the wrong moment, failing the first run
+> partway through with a permission error. Anywhere local is fine. On Windows
+> see [Windows notes](#windows-notes) for this and three other papercuts.
 
 ### 2. Have Docker
 
@@ -138,6 +129,29 @@ would rather use Postgres.
 
 See [Development](#development) for the test suite and the two-terminal setup
 with hot reload.
+
+### Windows notes
+
+None of these are Harmonia bugs. All of them have cost someone real time.
+
+- **PowerShell needs `.\run.bat`, not `run.bat`.** PowerShell does not run a
+  program from the current directory, so the bare name fails with "not
+  recognized". Command Prompt accepts `run.bat`, and double-clicking the file in
+  Explorer works either way.
+- **Python 3.10 is too old.** Harmonia needs 3.11 or newer. The launcher checks
+  the version and stops with a message saying so, rather than failing later in a
+  confusing way. If you see it, install a newer Python from
+  [python.org](https://www.python.org/downloads/) and tick "Add python.exe to
+  PATH" during setup.
+- **Clone somewhere short, such as `C:\dev\Harmonia-web`.** Unless long paths are
+  enabled, Windows caps a full path at 260 characters, and some of the files
+  installed into `.venv` are deeply nested. Starting from an already deep folder
+  makes the install fail partway with `Could not install packages due to an
+  OSError` naming a file under `.venv\Lib\site-packages`.
+- **Not inside OneDrive.** Syncing a virtual environment causes file-locking
+  failures partway through the first run, and OneDrive paths are usually long
+  enough to hit the previous point as well. If you have already hit either, move
+  the folder, delete `.venv`, and run the launcher again.
 
 ## Accuracy: what is measured, and what is not
 
