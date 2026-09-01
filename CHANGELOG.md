@@ -185,9 +185,11 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   builds the interface if it is missing, starts the server and opens a browser. They are
   idempotent by design: the dependency install is keyed on a hash of `pyproject.toml`, the
   frontend build is skipped when `frontend/build/index.html` exists, and only the (fast,
-  idempotent) migration step always runs. Measured on a fresh clone: **96 s cold, 3 s
-  warm**. Missing or too-old Python and Node produce a message naming what to install
-  rather than a stack trace; both paths were exercised. `.gitattributes` now forces CRLF
+  idempotent) migration step always runs. (This entry originally reported **96 s cold, 3 s
+  warm**, measured on a fresh clone. Those figures are withdrawn: see the correction in the
+  `run.bat` rewrite below.) Missing or too-old Python and Node produce a message naming what
+  to install rather than a stack trace; both paths were exercised. `.gitattributes` now
+  forces CRLF
   on `*.bat`, since the repo default of `eol=lf` would have broken batch parsing on the
   one platform that file exists for.
 - Restructured the README's entry points into three doors, easiest first: the launcher
@@ -218,6 +220,71 @@ academic submission is preserved under the `v0.1.0-academic` tag.
   `.rec-item` row and only interprets the empty state after that wait expires, which
   also preserves the diagnostic message for a genuinely empty result. Five consecutive
   full-suite runs pass.
+- Rewrote `run.bat` after its first real Windows run, which failed. It was shipped
+  unexecuted and had three faults, and they turned out to be one cascade rather than
+  three independent bugs. A `for /f` whose command begins with a quote is mis-parsed by
+  cmd, so the `pyproject.toml` hash step died with `'.venv\Scripts\python.exe" -c
+  "import' is not recognized`. Nothing checked it, and the failure then disguised itself
+  as success: the hash variable was left empty, the stored hash was also empty, and
+  `if "%SUM%"=="%OLDSUM%"` compared `""` with `""` and printed `ok dependencies already
+  installed`. So no dependencies were installed, and the migration step then reported
+  `'alembic' is a package and cannot be directly executed`, which is what `python -m
+  alembic` says when alembic is absent and only this repository's own `alembic\`
+  directory is left to match. A check that fails and reports success is worse than one
+  that crashes, so the script was rewritten rather than patched: no `for /f` anywhere,
+  output captured through a file, version gates read from exit codes rather than
+  captured text, a linear `goto` flow so plain `%ERRORLEVEL%` is always the code of the
+  command just run, and an errorlevel check after every external command. Every failure
+  path now ends in `pause`, since the documented way to start Harmonia is to
+  double-click the file and a window that closes on its own tells you nothing.
+- Fixed three further faults in `run.bat` found while auditing for that pattern. The
+  browser opened immediately instead of when the server was ready: `timeout /t 4` cannot
+  work under `start /b`, which gives it no console to read from, and on any machine with
+  Git for Windows on PATH the name resolves to GNU `timeout` instead. It now polls the
+  port and opens the browser when something answers, matching `run.sh`. The final
+  `uvicorn` line had no errorlevel check and no `pause`, so a busy port closed the window
+  with nothing readable; it now names the port and how to change it. And interpreter
+  discovery trusted `where py`, which succeeds against the Microsoft Store stub that is
+  not Python, so every candidate now has to run before it is accepted.
+- Switched both launchers from `python -m alembic` to the venv's `alembic` console
+  script, and `python -m uvicorn` to `uvicorn`. To be accurate about why: `-m` was not
+  broken. An installed regular package wins over a same-named directory in the working
+  directory, because a directory without `__init__.py` is only a namespace portion and
+  the path scan continues past it, so `python -m alembic` resolves correctly from the
+  repository root whenever alembic is actually installed. The console script is used
+  because `-m` reports a *missing* alembic as a message about this repository's
+  `alembic/` directory, which sends you looking at the wrong thing. It is a legibility
+  fix, not a correctness fix.
+- Applied the same audit to `run.sh`, which was already sound under `set -e` but failed
+  bare in places. Explicit messages now cover the pip upgrade, the `pyproject.toml` hash
+  and an empty hash result; the venv is checked for an interpreter rather than trusted to
+  have made one; `npm` is checked separately from `node`, and the Node version gate reads
+  an exit code instead of comparing captured text, so a crashed node can no longer be
+  reported as an old node.
+- Fixed `run.sh` being committed without its executable bit, which made the documented
+  first command fail on every fresh clone with `bash: ./run.sh: Permission denied`. It
+  had been mode `100644` since the launchers landed. The working copy here sits on a
+  filesystem where `core.filemode` is `false`, so a local `chmod +x` never reached the
+  index and the wrong mode was invisible from inside the working tree; `git update-index
+  --chmod=+x` sets it. Only cloning into a new directory and running `./run.sh` the way
+  the README says surfaces this, which is how it was found. `docker-entrypoint.sh` is
+  also `100644` but is unaffected, because the Dockerfile chmods it at build time.
+- Withdrew the "96 s cold, 3 s warm" figures from the launcher entry above. They cannot be
+  relied on: on a genuine fresh clone `./run.sh` could not have run at all, because of the
+  mode bit fixed in the entry above, so whatever produced those numbers was not the
+  documented invocation on a clean clone. A cold and a warm run were re-done from a fresh
+  clone after the fix and both work, but the timings were not measured cleanly and no
+  replacement figures are given here rather than invent them. If a number is wanted, it
+  needs a deliberate measurement on a stated machine.
+- README: noted that OneDrive, Dropbox and similar syncing folders cause file-locking
+  failures partway through the first run, because a virtual environment is thousands of
+  small files being written while the sync client tries to upload them. Added the related
+  Windows path-length trap in the same place, after hitting it for real: with long paths
+  disabled, which is the default, a 260 character cap applies, and installing into a
+  folder already deep in a long path fails partway with `Could not install packages due
+  to an OSError` naming a deeply nested file under `.venv\Lib\site-packages`. The
+  rewritten `run.bat` handled that correctly, stopping at the pip step with its message
+  rather than continuing.
 
 ### Phase 3.5: folder scanning (local ingestion) — done after Phase 6
 - Added `backend/scan.py`, a CLI (`python -m backend.scan PATH`) that registers local

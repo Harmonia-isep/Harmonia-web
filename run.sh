@@ -52,10 +52,22 @@ if [ -x "$VENV/bin/python" ]; then
 else
   info "Creating a virtual environment in $VENV"
   python3 -m venv "$VENV" || die "Could not create the virtual environment in $VENV."
+  # venv can exit 0 and still leave no interpreter behind, so check for one.
+  [ -x "$VENV/bin/python" ] \
+    || die "Creating the virtual environment reported success but produced no
+$VENV/bin/python."
   ok "created"
 fi
 
 PY="$VENV/bin/python"
+
+# Console scripts, not `python -m`. Both work when the package is installed, but
+# `-m alembic` reports a missing alembic as "'alembic' is a package and cannot be
+# directly executed", because this repository has its own alembic/ migrations
+# directory, which is the only candidate left when the real package is absent.
+# That message sends you looking at the wrong thing.
+ALEMBIC="$VENV/bin/alembic"
+UVICORN="$VENV/bin/uvicorn"
 
 # ---------------------------------------------------------------------------
 # Dependencies. Reinstalled only when pyproject.toml actually changes, so a
@@ -65,16 +77,27 @@ PYPROJECT_SUM="$("$PY" - <<'PY'
 import hashlib, pathlib
 print(hashlib.sha256(pathlib.Path("pyproject.toml").read_bytes()).hexdigest())
 PY
-)"
+)" || die "Could not read pyproject.toml to decide whether the dependencies need
+installing. Check that you are running this script from inside the Harmonia
+folder and that pyproject.toml is next to it."
+
+# An empty hash would compare equal to an empty stamp and silently claim the
+# dependencies were already installed.
+[ -n "$PYPROJECT_SUM" ] \
+  || die "Hashing pyproject.toml produced nothing. Refusing to guess whether the
+dependencies are installed."
 
 if [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$PYPROJECT_SUM" ]; then
   ok "dependencies already installed"
 else
   info "Installing Python dependencies (this takes a few minutes the first time)"
-  "$PY" -m pip install --upgrade pip >/dev/null
+  "$PY" -m pip install --upgrade pip >/dev/null \
+    || die "Upgrading pip failed. The output above says why."
   if ! "$PY" -m pip install -e .; then
     die "Installing the Python dependencies failed. The output above says why."
   fi
+  # The stamp is written only after pip actually succeeded, so an install that
+  # was interrupted is retried next run rather than skipped.
   printf '%s' "$PYPROJECT_SUM" > "$STAMP"
   ok "installed"
 fi
@@ -84,7 +107,10 @@ fi
 # what keeps an existing install working after a version bump.
 # ---------------------------------------------------------------------------
 info "Applying database migrations"
-if ! "$PY" -m alembic upgrade head; then
+[ -x "$ALEMBIC" ] \
+  || die "alembic is not installed in $VENV. The dependency install did not
+complete. Remove the $VENV directory and run this script again."
+if ! "$ALEMBIC" upgrade head; then
   die "Database migrations failed. The output above says why."
 fi
 ok "database ready"
@@ -106,9 +132,16 @@ Harmonia needs Node.js 20.19+ or 22.12+ to build the interface, once.
 You only need Node for this build step. It is not needed to run Harmonia
 afterwards."
   fi
+  if ! command -v npm >/dev/null 2>&1; then
+    die "Node.js is installed but npm is not on your PATH.
 
-  NODE_OK="$(node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.stdout.write((a>22||(a===22&&b>=12)||(a===20&&b>=19)||(a===21))?"yes":"no")')"
-  if [ "$NODE_OK" != "yes" ]; then
+npm ships with Node.js, so this usually means a partial install:
+  https://nodejs.org/"
+  fi
+
+  # Version gate by exit code. Capturing "yes" or "no" would make a node that
+  # crashed indistinguishable from a node that is too old.
+  if ! node -e 'const v=process.versions.node.split(".").map(Number); process.exit((v[0]>22||(v[0]===22&&v[1]>=12)||v[0]===21||(v[0]===20&&v[1]>=19))?0:1)'; then
     die "Node.js $(node -v) is too old to build the interface.
 
 Harmonia needs Node.js 20.19+ or 22.12+.
@@ -144,6 +177,10 @@ PY
   done
 }
 
+[ -x "$UVICORN" ] \
+  || die "uvicorn is not installed in $VENV. The dependency install did not
+complete. Remove the $VENV directory and run this script again."
+
 printf '\n'
 info "Starting Harmonia on http://127.0.0.1:$PORT"
 printf '    Press Ctrl+C to stop.\n\n'
@@ -151,5 +188,5 @@ printf '    Press Ctrl+C to stop.\n\n'
 open_when_ready &
 
 # exec so Ctrl+C reaches uvicorn directly rather than this script.
-exec "$PY" -m uvicorn --factory backend.main:create_app \
+exec "$UVICORN" --factory backend.main:create_app \
   --host 127.0.0.1 --port "$PORT"

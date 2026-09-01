@@ -54,6 +54,21 @@ You need **Python 3.11+** installed. Node.js 20.19+ or 22.12+ is needed only for
 the one-time interface build; the script tells you if either is missing, and
 what to install.
 
+> **Put the folder somewhere local, not in OneDrive.** A virtual environment is
+> thousands of small files, and a syncing client (OneDrive, Dropbox, Google
+> Drive, iCloud) will try to upload them while they are being written. It can
+> hold a file open at the wrong moment, which shows up as a permission error or
+> a half-created environment partway through the first run. On Windows,
+> `%USERPROFILE%\Harmonia-web` is a safe place. If you have already hit this,
+> move the folder, delete `.venv`, and run the launcher again.
+>
+> A short path helps for a second reason. Unless long paths are enabled, Windows
+> caps a full path at 260 characters, and some of the files installed inside
+> `.venv` are deeply nested. Installing into a folder that is already far down a
+> long path fails partway with `Could not install packages due to an OSError`
+> naming a file inside `.venv\Lib\site-packages`. Keeping the project near the
+> root of your user folder leaves enough room.
+
 ### 2. Have Docker
 
 ```bash
